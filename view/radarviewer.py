@@ -25,18 +25,15 @@ class Radar_Viewer(QMainWindow):
         self.radar_viewer = loadUi("./ui/radar_viewer.ui", self)
         self.radar_viewer.tab_widget.setCurrentIndex(0)
 
-
         self.cam_manager = CameraManager()
         self.cam = self.cam_manager.get_camera_instance()
 
         self.camera_setting_dialog = camera_setting.CameraSettingDialog(self.cam_manager)
         self.radar_viewer.actionCamera_Setting.triggered.connect(self.start_camera_setting_dialog)
 
-
-        self.timer = QTimer(self)
-        self.timer.timeout.connect(self.update)
-        framerate = 30
-        self.timer.start((int)(1000.0/framerate))
+        self.frame_update_timer = QTimer(self)
+        self.frame_update_timer.timeout.connect(self.update)
+        self.frame_update_timer.start((int)(1000.0/self.cam_manager.framerate))
 
     def start_camera_setting_dialog(self):
         self.camera_setting_dialog.show()
@@ -49,13 +46,15 @@ class Radar_Viewer(QMainWindow):
 
             pixmap = QPixmap.fromImage(image)
 
-            scaled_pixmap = pixmap.scaled(1.5*frame.shape[1],1.5*frame.shape[0],
+            scaled_pixmap = pixmap.scaled(2*frame.shape[1],2*frame.shape[0],
                                           aspectRatioMode = Qt.KeepAspectRatioByExpanding,
                                           transformMode = Qt.SmoothTransformation)
 
             self.radar_viewer.label_video.setPixmap(scaled_pixmap)
 
-app = QApplication(sys.argv)
-widget = Radar_Viewer()
-widget.show()
-sys.exit(app.exec_())
+
+if __file__ == "__main__":
+    app = QApplication(sys.argv)
+    main_window = Radar_Viewer()
+    main_window.show()
+    sys.exit(app.exec_())
