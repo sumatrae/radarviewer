@@ -6,7 +6,7 @@ class CameraCfg():
         self.camera_list = []
         self.id = 0
         self.framerate = 30
-        self.resolution = (1280,720)
+        self.resolution = [1280,720]
         self.brightness = 0
         self.contrast = 0
         self.gain = 0
@@ -17,6 +17,21 @@ class CameraManager(CameraCfg):
         super(CameraManager, self).__init__()
         self.init_camera_info()
 
+    def init_camera_info(self,):
+        self.id = 0
+        self.camera_list = camera_list.camera_list
+
+        self.cam = self.get_camera_instance(0)
+        if self.cam:
+            self.read_camera_cfg()
+
+    def update_camera_info(self, id):
+        self.cam = self.get_camera_instance(id)
+        if self.cam:
+            self.set_camera_cfg()
+            self.read_camera_cfg()
+
+
     def read_camera_cfg(self):
         self.framerate = self.cam.get_framerate()
         self.resolution = self.cam.get_resolution()
@@ -24,28 +39,17 @@ class CameraManager(CameraCfg):
         self.contrast = self.cam.get_contrast()
         self.gain = self.cam.get_gain()
 
-    def init_camera_info(self,):
-        self.id = 0
-        self.camera_list = camera_list.camera_list
+    def set_camera_cfg(self):
+        self.cam.set_framerate(self.framerate)
+        self.cam.set_resolution(self.resolution[0],self.resolution[1])
+        self.cam.set_brightness(self.brightness)
+        self.cam.set_contrast(self.contrast)
+        self.cam.set_gain(self.gain)
 
-        self.cam = self.get_camera_instance()
-        if self.cam:
-            self.read_camera_cfg()
-
-
-    def update_camera_info(self, id):
-        if self.id == id:
-            return
-
-        self.id = id
-        self.cam = self.get_camera_instance()
-        if self.cam:
-            self.read_camera_cfg()
-
-
-    def get_camera_instance(self):
-        if isinstance(self.cam, camera.Camera):
+    def get_camera_instance(self,id):
+        if isinstance(self.cam, camera.Camera) and self.id == id:
             return self.cam
 
-        self.cam = camera.Camera(self.id)
+        self.id = id
+        self.cam = camera.Camera(id)
         return self.cam

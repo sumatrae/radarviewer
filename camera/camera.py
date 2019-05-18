@@ -22,19 +22,19 @@ class Camera():
         self.cap_fd.release()
 
     def set_framerate(self, frame_rate):
-        self.cap_fd.set(cv.CAP_PROP_FPS, frame_rate)
+        self.cap_fd.set(cv.CAP_PROP_FPS, int(frame_rate))
 
     def get_framerate(self):
         return self.cap_fd.get(cv.CAP_PROP_FPS)
 
-    def set_resolution(self, hight, width):
-        self.cap_fd.set(cv.CAP_PROP_FRAME_WIDTH, width)
-        self.cap_fd.set(cv.CAP_PROP_FRAME_HEIGHT, hight)
+    def set_resolution(self,width,hight):
+        self.cap_fd.set(cv.CAP_PROP_FRAME_WIDTH, int(width))
+        self.cap_fd.set(cv.CAP_PROP_FRAME_HEIGHT, int(hight))
 
     def get_resolution(self):
         width = self.cap_fd.get(cv.CAP_PROP_FRAME_WIDTH)
         height = self.cap_fd.get(cv.CAP_PROP_FRAME_HEIGHT)
-        return width, height
+        return [width, height]
 
     def set_brightness(self, brightness):
         self.cap_fd.set(cv.CAP_PROP_BRIGHTNESS, brightness)

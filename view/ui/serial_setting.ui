@@ -11,7 +11,11 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Dialog</string>
+   <string>Radar Setting</string>
+  </property>
+  <property name="windowIcon">
+   <iconset>
+    <normaloff>icon/radar_setting.png</normaloff>icon/radar_setting.png</iconset>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout" stretch="1,4,2,0">
    <item>
@@ -43,14 +47,14 @@
       </spacer>
      </item>
      <item row="0" column="1">
-      <widget class="QLabel" name="label">
+      <widget class="QLabel" name="label_port">
        <property name="text">
         <string>Port</string>
        </property>
       </widget>
      </item>
      <item row="0" column="2">
-      <widget class="QComboBox" name="comboBox">
+      <widget class="QComboBox" name="comboBox_port">
        <property name="editable">
         <bool>false</bool>
        </property>
@@ -60,28 +64,28 @@
       </widget>
      </item>
      <item row="3" column="1">
-      <widget class="QLabel" name="label_4">
+      <widget class="QLabel" name="label_datawidth">
        <property name="text">
         <string>Data width </string>
        </property>
       </widget>
      </item>
      <item row="1" column="1">
-      <widget class="QLabel" name="label_2">
+      <widget class="QLabel" name="label_baudrate">
        <property name="text">
         <string>Baudrate</string>
        </property>
       </widget>
      </item>
      <item row="4" column="1">
-      <widget class="QLabel" name="label_5">
+      <widget class="QLabel" name="label_stopbit">
        <property name="text">
         <string>Stop bit</string>
        </property>
       </widget>
      </item>
      <item row="2" column="1">
-      <widget class="QLabel" name="label_3">
+      <widget class="QLabel" name="label_parity">
        <property name="text">
         <string>Parity</string>
        </property>
@@ -101,16 +105,16 @@
       </spacer>
      </item>
      <item row="1" column="2">
-      <widget class="QComboBox" name="comboBox_2"/>
+      <widget class="QComboBox" name="comboBox_baudrate"/>
      </item>
      <item row="2" column="2">
-      <widget class="QComboBox" name="comboBox_3"/>
+      <widget class="QComboBox" name="comboBox_parity"/>
      </item>
      <item row="3" column="2">
-      <widget class="QComboBox" name="comboBox_4"/>
+      <widget class="QComboBox" name="comboBox_datawidth"/>
      </item>
      <item row="4" column="2">
-      <widget class="QComboBox" name="comboBox_5"/>
+      <widget class="QComboBox" name="comboBox_stopbit"/>
      </item>
     </layout>
    </item>

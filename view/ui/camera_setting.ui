@@ -17,7 +17,7 @@
    <iconset>
     <normaloff>icon/camera.png</normaloff>icon/camera.png</iconset>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout" stretch="1,4,2,1">
+  <layout class="QVBoxLayout" name="verticalLayout" stretch="1,4,2,0">
    <item>
     <spacer name="verticalSpacer_2">
      <property name="orientation">
