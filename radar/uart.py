@@ -36,3 +36,9 @@ class Uart():
 
     def write(self):
         pass
+		
+	def write_and_read():
+		pass
+		
+	def read_thread()
+		pass

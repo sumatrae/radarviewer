@@ -1,3 +1,18 @@
+from collections import deque
+
+
+class Obstacle():
+    def __init__(self,x,y,v):
+        self.x = x
+        self.y = y
+        self.v = v
+
+
+class ObstacleList():
+    def __init__(self):
+        self.all_obstacle = deque()
+
+
 
 
 class Radar():
