@@ -23,6 +23,8 @@ import about
 from PIL import Image
 from processing import *
 
+from radar import *
+
 #棋盘格模板规格
 w = 11
 h = 8
@@ -37,6 +39,7 @@ class Radar_Viewer(QMainWindow):
         self.cam_manager = CameraManager()
         self.radar_viewer.actionCamera_Setting.triggered.connect(self.start_camera_setting_dialog)
 
+        self.uart_cfg = UartConfig("COM0")
         self.radar_viewer.actionRadar_Setting.triggered.connect(self.start_serial_setting_dialog)
 
         self.radar_viewer.actionAbout.triggered.connect(self.start_about_dialog)
@@ -49,6 +52,9 @@ class Radar_Viewer(QMainWindow):
 
         self.criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 
+
+
+
     def start_camera_setting_dialog(self):
         self.camera_setting_dialog = camera_setting.CameraSettingDialog(self.cam_manager)
         self.camera_setting_dialog.camera_setting_signal.connect(self.update_camera_info)
@@ -56,9 +62,12 @@ class Radar_Viewer(QMainWindow):
         self.camera_setting_dialog.show()
 
     def start_serial_setting_dialog(self):
-        self.serial_setting_dialog = serial_setting.SerialSettingDialog()
-
-        self.serial_setting_dialog.show()
+        try:
+            self.serial_setting_dialog = serial_setting.SerialSettingDialog(self.uart_cfg)
+            self.serial_setting_dialog.serial_setting_signal.connect(self.update_uart_info)
+            self.serial_setting_dialog.show()
+        except Exception as e:
+            print(e)
 
     def start_about_dialog(self):
         self.about_dialog = about.AboutDialog()
@@ -74,6 +83,11 @@ class Radar_Viewer(QMainWindow):
         self.cam_manager.gain = camera_config_msg.gain
         self.cam_manager.update_camera_info(camera_config_msg.id)
         self.frame_update_timer.start((int)(1000.0 / self.cam_manager.framerate))
+
+    def update_uart_info(self, uart_config_msg):
+        self.uart_cfg = uart_config_msg
+        #pass
+
 
     # def update(self):
     #     ret, frame = self.cam_manager.cam.take_photo()
@@ -93,7 +107,7 @@ class Radar_Viewer(QMainWindow):
     def update(self):
         ret, frame = self.cam_manager.cam.take_photo()
         if ret == True:
-
+            #pass
             gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
 
             # 找到棋盘格角点
@@ -123,7 +137,7 @@ class Radar_Viewer(QMainWindow):
 
             pixmap = QPixmap.fromImage(image)
 
-            scaled_pixmap = pixmap.scaled(2 * frame.shape[1], 2* frame.shape[0],
+            scaled_pixmap = pixmap.scaled(1 * frame.shape[1], 1* frame.shape[0],
                                           aspectRatioMode=Qt.KeepAspectRatioByExpanding,
                                           transformMode=Qt.SmoothTransformation)
 
