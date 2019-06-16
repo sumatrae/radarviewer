@@ -4,10 +4,18 @@ import os
 import re
 import sys
 
+import random
+
 from PyQt5.QtCore import Qt, QTimer, pyqtSlot, QThread
 from PyQt5.QtGui import QIcon, QPalette, QImage, QPixmap
-from PyQt5.QtWidgets import QApplication, QDialog, QMainWindow, QMessageBox
+from PyQt5.QtWidgets import QApplication, QDialog, QMainWindow, QMessageBox, QGridLayout
 from PyQt5.uic import loadUi
+
+import matplotlib
+matplotlib.use("Qt5Agg")  # 声明使用QT5
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.figure import Figure
+import matplotlib.pyplot as plt
 
 from camera import Camera
 from camera import CameraManager
@@ -28,6 +36,18 @@ from radar import *
 #棋盘格模板规格
 w = 11
 h = 8
+
+#创建一个matplotlib图形绘制类
+class MyFigure(FigureCanvas):
+    def __init__(self,width=3, height=2, dpi=100):
+        #第一步：创建一个创建Figure
+        self.fig = Figure(figsize=(width, height), dpi=dpi)
+        #第二步：在父类中激活Figure窗口
+        super(MyFigure,self).__init__(self.fig) #此句必不可少，否则不能显示图形
+        #第三步：创建一个子图，用于绘制图形用，111表示子图编号，如matlab的subplot(1,1,1)
+        #self.axes = self.fig.add_subplot(111)
+        self.axes = self.fig.gca()
+
 
 class Radar_Viewer(QMainWindow):
     def __init__(self, *args):
@@ -52,7 +72,41 @@ class Radar_Viewer(QMainWindow):
 
         self.criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 
+        self.F = MyFigure(width=6, height=4, dpi=100)
+        # self.F.plotsin()
+        self.plot_scatter()
 
+        self.gridlayout = QGridLayout(self.radar_viewer.groupBox_radar)  # 继承容器groupBox
+        self.gridlayout.addWidget(self.F, 0, 1)
+
+        self.video_width = 1150
+        self.video_height = 650
+
+
+    def plot_scatter(self):
+        y_max = 100
+        y_min = 0
+        x_max = 10
+        x_min = -10
+        point_num = 10
+
+        rect = plt.Rectangle((-5, 5), 10, 40, linewidth=1, edgecolor='r', facecolor='r')
+        rect.set_alpha(0.3)
+        self.F.axes.add_patch(rect)
+
+        self.F.axes.scatter(np.random.uniform(x_min,x_max,point_num), np.random.uniform(y_min,y_max,point_num))
+        self.F.axes.axis([x_min, x_max, y_min, y_max])
+
+        self.F.axes.grid(color='deepskyblue', linestyle='dashed', linewidth=1,alpha=0.3)
+
+        self.F.axes.spines['top'].set_visible(False)  # 去掉上边框
+        self.F.axes.spines['right'].set_visible(False)  # 去掉右边框
+        self.F.axes.spines['left'].set_position(('axes', 0.5))
+        self.F.fig.tight_layout()
+        #self.F.axes.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.1)
+        #self.F.axes.yaxis.set_ticks_position('left')
+
+        #self.F.fig.suptitle("scatter")
 
 
     def start_camera_setting_dialog(self):
@@ -132,16 +186,27 @@ class Radar_Viewer(QMainWindow):
 
 
 
-            frame = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
-            image = QImage(frame.data, frame.shape[1], frame.shape[0], QImage.Format_RGB888)
+            self.frame = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
+            self.image = QImage(frame.data, frame.shape[1], self.frame.shape[0], QImage.Format_RGB888)
 
-            pixmap = QPixmap.fromImage(image)
+            self.pixmap = QPixmap.fromImage( self.image)
 
-            scaled_pixmap = pixmap.scaled(1 * frame.shape[1], 1* frame.shape[0],
+            self.scaled_pixmap = self.pixmap.scaled(self.video_width, self.video_height,
                                           aspectRatioMode=Qt.KeepAspectRatioByExpanding,
                                           transformMode=Qt.SmoothTransformation)
 
-            self.radar_viewer.label_video.setPixmap(scaled_pixmap)
+            self.radar_viewer.label_video.setPixmap(self.scaled_pixmap)
+
+    def resizeEvent(self, event):
+        # self.scaled_pixmap = self.pixmap.scaled(self.radar_viewer.label_video.width(),
+        #                                         self.radar_viewer.label_video.height(),
+        #                                         aspectRatioMode=Qt.KeepAspectRatioByExpanding,
+        #                                         transformMode=Qt.SmoothTransformation)
+        # self.radar_viewer.label_video.setPixmap(self.scaled_pixmap)
+        print("resize event")
+
+
+
 
 
 app = QApplication(sys.argv)
