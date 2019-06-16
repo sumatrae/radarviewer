@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1489</width>
+    <width>1661</width>
     <height>851</height>
    </rect>
   </property>
@@ -95,7 +95,7 @@
               </property>
               <layout class="QVBoxLayout" name="verticalLayout">
                <item>
-                <layout class="QGridLayout" name="gridLayout" columnstretch="0,0,0,0,1,1,1,2,1">
+                <layout class="QGridLayout" name="gridLayout" columnstretch="0,0,0,0,0,0,0,0,0">
                  <property name="leftMargin">
                   <number>10</number>
                  </property>
@@ -112,7 +112,7 @@
                   <number>10</number>
                  </property>
                  <item row="0" column="1">
-                  <widget class="QLineEdit" name="lineEdit">
+                  <widget class="QLineEdit" name="lineEdit_radar_startx">
                    <property name="sizePolicy">
                     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                      <horstretch>0</horstretch>
@@ -125,10 +125,13 @@
                      <height>16777215</height>
                     </size>
                    </property>
+                   <property name="text">
+                    <string>-2.5</string>
+                   </property>
                   </widget>
                  </item>
                  <item row="0" column="4">
-                  <widget class="QCheckBox" name="checkBox_3">
+                  <widget class="QCheckBox" name="checkBox_radar_trigger">
                    <property name="sizePolicy">
                     <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                      <horstretch>0</horstretch>
@@ -141,7 +144,7 @@
                   </widget>
                  </item>
                  <item row="0" column="5">
-                  <widget class="QCheckBox" name="checkBox_4">
+                  <widget class="QCheckBox" name="checkBox_cv_trigger">
                    <property name="sizePolicy">
                     <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                      <horstretch>0</horstretch>
@@ -154,14 +157,14 @@
                   </widget>
                  </item>
                  <item row="0" column="7">
-                  <widget class="QSlider" name="horizontalSlider">
+                  <widget class="QSlider" name="horizontalSlider_video_brightness">
                    <property name="orientation">
                     <enum>Qt::Horizontal</enum>
                    </property>
                   </widget>
                  </item>
                  <item row="0" column="3">
-                  <widget class="QLineEdit" name="lineEdit_2">
+                  <widget class="QLineEdit" name="lineEdit_radar_capture_width">
                    <property name="sizePolicy">
                     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                      <horstretch>0</horstretch>
@@ -174,10 +177,13 @@
                      <height>16777215</height>
                     </size>
                    </property>
+                   <property name="text">
+                    <string>5</string>
+                   </property>
                   </widget>
                  </item>
                  <item row="0" column="2">
-                  <widget class="QLabel" name="label_width">
+                  <widget class="QLabel" name="label_radar_capture_width">
                    <property name="text">
                     <string>雷达监控宽度w</string>
                    </property>
@@ -187,9 +193,9 @@
                   </widget>
                  </item>
                  <item row="0" column="0">
-                  <widget class="QLabel" name="label_startx">
+                  <widget class="QLabel" name="label_radar_startx">
                    <property name="text">
-                    <string>雷达监控范围x</string>
+                    <string>雷达监控位置起始x</string>
                    </property>
                    <property name="alignment">
                     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -202,7 +208,7 @@
                     <enum>Qt::RightToLeft</enum>
                    </property>
                    <property name="text">
-                    <string>亮度</string>
+                    <string>视频亮度</string>
                    </property>
                    <property name="alignment">
                     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -210,9 +216,9 @@
                   </widget>
                  </item>
                  <item row="1" column="0">
-                  <widget class="QLabel" name="label_starty">
+                  <widget class="QLabel" name="label_radar_starty">
                    <property name="text">
-                    <string>雷达监控位置y</string>
+                    <string>雷达监控位置起始y</string>
                    </property>
                    <property name="alignment">
                     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -220,7 +226,7 @@
                   </widget>
                  </item>
                  <item row="1" column="1">
-                  <widget class="QLineEdit" name="lineEdit_4">
+                  <widget class="QLineEdit" name="lineEdit_radar_starty">
                    <property name="sizePolicy">
                     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                      <horstretch>0</horstretch>
@@ -233,10 +239,13 @@
                      <height>16777215</height>
                     </size>
                    </property>
+                   <property name="text">
+                    <string>10</string>
+                   </property>
                   </widget>
                  </item>
                  <item row="1" column="5">
-                  <widget class="QCheckBox" name="checkBox_2">
+                  <widget class="QCheckBox" name="checkBox_save_picture_auto">
                    <property name="sizePolicy">
                     <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                      <horstretch>0</horstretch>
@@ -249,9 +258,9 @@
                   </widget>
                  </item>
                  <item row="1" column="2">
-                  <widget class="QLabel" name="label_height">
+                  <widget class="QLabel" name="label_radar_capture_deepth">
                    <property name="text">
-                    <string>雷达监控高度h</string>
+                    <string>雷达监控深度d</string>
                    </property>
                    <property name="alignment">
                     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -259,7 +268,7 @@
                   </widget>
                  </item>
                  <item row="1" column="4">
-                  <widget class="QCheckBox" name="checkBox">
+                  <widget class="QCheckBox" name="checkBox_detector_switch">
                    <property name="sizePolicy">
                     <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                      <horstretch>0</horstretch>
@@ -267,22 +276,25 @@
                     </sizepolicy>
                    </property>
                    <property name="text">
-                    <string>智能检测</string>
+                    <string>视觉检测</string>
                    </property>
                   </widget>
                  </item>
                  <item row="2" column="1">
-                  <widget class="QLineEdit" name="lineEdit_5">
+                  <widget class="QLineEdit" name="lineEdit_image_capture_period">
                    <property name="maximumSize">
                     <size>
                      <width>80</width>
                      <height>16777215</height>
                     </size>
                    </property>
+                   <property name="text">
+                    <string>1000</string>
+                   </property>
                   </widget>
                  </item>
                  <item row="2" column="0">
-                  <widget class="QLabel" name="label">
+                  <widget class="QLabel" name="label_image_capture_period">
                    <property name="text">
                     <string>图像捕获周期(ms)</string>
                    </property>
@@ -292,7 +304,7 @@
                   </widget>
                  </item>
                  <item row="1" column="3">
-                  <widget class="QLineEdit" name="lineEdit_3">
+                  <widget class="QLineEdit" name="lineEdit_radar_capture_deepth">
                    <property name="sizePolicy">
                     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                      <horstretch>0</horstretch>
@@ -305,6 +317,9 @@
                      <height>16777215</height>
                     </size>
                    </property>
+                   <property name="text">
+                    <string>5</string>
+                   </property>
                   </widget>
                  </item>
                  <item row="1" column="6">
@@ -313,7 +328,7 @@
                     <enum>Qt::RightToLeft</enum>
                    </property>
                    <property name="text">
-                    <string>对比度</string>
+                    <string>视频对比度</string>
                    </property>
                    <property name="alignment">
                     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -321,7 +336,7 @@
                   </widget>
                  </item>
                  <item row="1" column="7">
-                  <widget class="QSlider" name="horizontalSlider_2">
+                  <widget class="QSlider" name="horizontalSlider_video_contrast">
                    <property name="orientation">
                     <enum>Qt::Horizontal</enum>
                    </property>
@@ -616,7 +631,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1489</width>
+     <width>1661</width>
      <height>23</height>
     </rect>
    </property>
