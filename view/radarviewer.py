@@ -58,18 +58,8 @@ class Radar_Viewer(QMainWindow):
         self.radar_viewer = loadUi("./ui/radar_viewer.ui", self)
         self.radar_viewer.tab_widget.setCurrentIndex(0)
 
-        # init menu
-        self.cam_manager = CameraManager()
-        self.radar_viewer.actionCamera_Setting.triggered.connect(self.start_camera_setting_dialog)
-        self.uart_cfg = UartConfig("COM0")
-        self.radar_viewer.actionRadar_Setting.triggered.connect(self.start_serial_setting_dialog)
-        self.radar_viewer.actionAbout.triggered.connect(self.start_about_dialog)
-
-        # load radar axis
-        self.qtfig = QtFigure(width=6, height=4, dpi=100)
-        #self.plot_scatter()
-        self.gridlayout = QGridLayout(self.radar_viewer.groupBox_radar)
-        self.gridlayout.addWidget(self.qtfig)
+        self.init_manu_bar()
+        self.load_radar_axis()
 
         self.radar_max_x_abs = 50
         self.radar_max_y_abs = 200
@@ -85,6 +75,30 @@ class Radar_Viewer(QMainWindow):
         self.detector = YOLO()
         self.detector_enable = False
 
+        self.init_main_ui_setting()
+        self.init_timers()
+
+        # self.showFullScreen()
+        # self.showMaximized()
+    def init_manu_bar(self):
+        # init menu
+        self.cam_manager = CameraManager()
+        self.radar_viewer.actionCamera_Setting.triggered.connect(self.start_camera_setting_dialog)
+
+        self.uart_cfg = UartConfig("COM0")
+        self.radar_viewer.actionRadar_Setting.triggered.connect(self.start_serial_setting_dialog)
+        self.radar_viewer.actionAbout.triggered.connect(self.start_about_dialog)
+
+    def load_radar_axis(self):
+        # load radar axis
+        self.qtfig = QtFigure(width=6, height=4, dpi=100)
+        # self.plot_scatter()
+        self.gridlayout = QGridLayout(self.radar_viewer.groupBox_radar)
+        self.gridlayout.addWidget(self.qtfig)
+
+        self.scatter_collection = None
+
+    def init_main_ui_setting(self):
         # init setting
         self.radar_viewer.checkBox_detector_switch.stateChanged.connect(self.set_cv_detector)
         self.radar_viewer.checkBox_cv_trigger.stateChanged.connect(self.set_cv_trigger)
@@ -112,35 +126,33 @@ class Radar_Viewer(QMainWindow):
         self.radar_viewer.lineEdit_image_capture_period.move(50, 90)
         self.radar_viewer.lineEdit_image_capture_period.returnPressed.connect(self.set_image_capture_period)
 
+    def init_timers(self):
         # set video update timer
         self.frame_update_timer = QTimer(self)
-        self.frame_update_timer.timeout.connect(self.update)
+        self.frame_update_timer.timeout.connect(self.update_video)
         self.frame_update_timer.start((int)(1000.0 / self.cam_manager.framerate))
 
         self.radar_update_timer = QTimer(self)
         self.radar_update_timer.timeout.connect(self.update_radar)
-        self.radar_update_timer.start(100)
-
-        # self.showFullScreen()
-        # self.showMaximized()
+        self.radar_update_timer.start(1000)
 
     def set_image_capture_period(self):
         print(self.radar_viewer.lineEdit_image_capture_period.text())
 
     def handle_radar_capture_area_setting(self):
         radar_startx = float(self.radar_viewer.lineEdit_radar_startx.text())
-        radar_starty =  float(self.radar_viewer.lineEdit_radar_starty.text())
-        radar_capture_width =  float(self.radar_viewer.lineEdit_radar_capture_width.text())
-        radar_capture_deepth =  float(self.radar_viewer.lineEdit_radar_capture_deepth.text())
+        radar_starty = float(self.radar_viewer.lineEdit_radar_starty.text())
+        radar_capture_width = float(self.radar_viewer.lineEdit_radar_capture_width.text())
+        radar_capture_deepth = float(self.radar_viewer.lineEdit_radar_capture_deepth.text())
 
-        if (abs(radar_startx) < self.radar_max_x_abs or  -radar_startx == self.radar_max_x_abs)\
-                and  0<= radar_starty <self.radar_y_max \
+        if (abs(radar_startx) < self.radar_max_x_abs or -radar_startx == self.radar_max_x_abs) \
+                and 0 <= radar_starty < self.radar_y_max \
                 and radar_startx + radar_capture_width <= self.radar_max_x_abs \
-                and  radar_starty + radar_capture_deepth <= self.radar_y_max\
-                and radar_capture_width > 0\
+                and radar_starty + radar_capture_deepth <= self.radar_y_max \
+                and radar_capture_width > 0 \
                 and radar_capture_deepth > 0:
             self.radar_startx = radar_startx
-            self.radar_starty =  radar_starty
+            self.radar_starty = radar_starty
             self.radar_capture_width = radar_capture_width
             self.radar_capture_deepth = radar_capture_deepth
 
@@ -158,8 +170,9 @@ class Radar_Viewer(QMainWindow):
         self.qtfig.fig.tight_layout()
 
     def draw_capture_area(self):
-        self.rect = plt.Rectangle((self.radar_startx, self.radar_starty), self.radar_capture_width, self.radar_capture_deepth,
-                             linewidth=1, edgecolor='r', facecolor='r')
+        self.rect = plt.Rectangle((self.radar_startx, self.radar_starty), self.radar_capture_width,
+                                  self.radar_capture_deepth,
+                                  linewidth=1, edgecolor='r', facecolor='r')
         self.rect.set_alpha(0.3)
         self.qtfig.axes.add_patch(self.rect)
 
@@ -169,20 +182,26 @@ class Radar_Viewer(QMainWindow):
     def plot_scatter(self):
         point_num = 10
 
-        self.qtfig.fig.canvas.draw_idle()
+        #self.qtfig.fig.canvas.draw_idle()
+        # if self.scatter_collection:
+        #     self.scatter_collection.remove()
+
+        #self.draw_axis()
         if self.scatter_collection:
             self.scatter_collection.remove()
+            self.qtfig.fig.canvas.draw_idle()
 
         self.draw_axis()
-        self.scatter_collection = self.qtfig.axes.scatter(np.random.uniform(self.radar_x_min, self.radar_x_max, point_num),
-                                np.random.uniform(self.radar_y_min, self.radar_y_max, point_num))
+
+        self.scatter_collection = self.qtfig.axes.scatter(
+            np.random.uniform(self.radar_x_min, self.radar_x_max, point_num),
+            np.random.uniform(self.radar_y_min, self.radar_y_max, point_num))
 
     def update_radar(self):
         # if self.scatter_collection:
         #     self.scatter_collection.remove()
-
+        plt.clf()
         self.plot_scatter()
-
 
     def start_camera_setting_dialog(self):
         self.camera_setting_dialog = camera_setting.CameraSettingDialog(self.cam_manager)
@@ -215,7 +234,7 @@ class Radar_Viewer(QMainWindow):
     def update_uart_info(self, uart_config_msg):
         self.uart_cfg = uart_config_msg
 
-    def update(self):
+    def update_video(self):
         ret, frame = self.cam_manager.cam.take_photo()
         if ret == True:
             # gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)

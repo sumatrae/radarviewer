@@ -1,25 +1,11 @@
-import matplotlib.pyplot  as plt
-import numpy as np
-import matplotlib.animation as antt
+import seaborn as sns
+sns.set()
 
-fig = plt.figure()
+# Load the example iris dataset
+planets = sns.load_dataset("planets")
 
-img = fig.add_subplot(111)
-
-a, = img.plot(np.random.rand(36), 'green')
-
-
-def dtt(data):
-    a.set_ydata(data)
-
-    return a,
-
-
-def dong():
-    while True:
-        yield np.random.rand(36)
-
-
-gif = antt.FuncAnimation(fig, func = dtt, init_func = dong, interval=1000)
-
-plt.show()
+cmap = sns.cubehelix_palette(rot=-.2, as_cmap=True)
+ax = sns.scatterplot(x="distance", y="orbital_period",
+                     hue="year", size="mass",
+                     palette=cmap, sizes=(10, 200),
+                     data=planets)
