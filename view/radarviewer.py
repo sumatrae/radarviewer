@@ -126,6 +126,23 @@ class Radar_Viewer(QMainWindow):
         self.radar_viewer.lineEdit_image_capture_period.move(50, 90)
         self.radar_viewer.lineEdit_image_capture_period.returnPressed.connect(self.set_image_capture_period)
 
+        self.radar_viewer.horizontalSlider_video_brightness.setRange(0,200)
+        self.radar_viewer.horizontalSlider_video_contrast.setRange(0,100)
+        self.radar_viewer.horizontalSlider_video_brightness.setValue(self.cam_manager.brightness)
+        self.radar_viewer.horizontalSlider_video_contrast.setValue(self.cam_manager.contrast)
+        self.radar_viewer.horizontalSlider_video_brightness.valueChanged.connect(self.set_video_brightness)
+        self.radar_viewer.horizontalSlider_video_contrast.valueChanged.connect(self.set_video_contrast)
+
+    def set_video_brightness(self):
+        self.cam_manager.brightness = self.radar_viewer.horizontalSlider_video_brightness.value()
+        self.cam_manager.update_camera_info(self.cam_manager.id)
+
+    def set_video_contrast(self):
+        self.cam_manager.contrast = self.radar_viewer.horizontalSlider_video_contrast.value()
+        self.cam_manager.update_camera_info(self.cam_manager.id)
+
+
+
     def init_timers(self):
         # set video update timer
         self.frame_update_timer = QTimer(self)
@@ -229,6 +246,10 @@ class Radar_Viewer(QMainWindow):
         self.cam_manager.contrast = camera_config_msg.contrast
         self.cam_manager.gain = camera_config_msg.gain
         self.cam_manager.update_camera_info(camera_config_msg.id)
+
+        self.radar_viewer.horizontalSlider_video_brightness.setValue(self.cam_manager.brightness)
+        self.radar_viewer.horizontalSlider_video_contrast.setValue(self.cam_manager.contrast)
+
         self.frame_update_timer.start((int)(1000.0 / self.cam_manager.framerate))
 
     def update_uart_info(self, uart_config_msg):
