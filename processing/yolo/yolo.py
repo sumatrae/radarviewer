@@ -130,6 +130,7 @@ class YOLO(object):
                     size=np.floor(3e-2 * image.size[1] + 0.5).astype('int32'))
         thickness = (image.size[0] + image.size[1]) // 300
 
+        exist_person = False
         for i, c in reversed(list(enumerate(out_classes))):
             predicted_class = self.class_names[c]
             box = out_boxes[i]
@@ -162,9 +163,13 @@ class YOLO(object):
             draw.text(text_origin, label, fill=(0, 0, 0), font=font)
             del draw
 
+            if "person" == predicted_class:
+                exist_person = True
+
+
         end = timer()
         print(end - start)
-        return image
+        return image,exist_person
 
     def close_session(self):
         self.sess.close()

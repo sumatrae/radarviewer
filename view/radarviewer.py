@@ -31,16 +31,23 @@ from collections import deque
 import camera_setting
 import serial_setting
 import about
+import time
 
 from PIL import Image
 from processing import *
 
 from radar import *
+import glob
+from collections import deque
 
 # 棋盘格模板规格
 CHESSBOARD_W_NUM = 11
 CHESSBOARD_H_NUM = 8
 CRITERIA = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 30, 0.001)
+IMG_PATH = "../temp"
+
+IMAGE_WIDTH = 1080
+IMAGE_HEIGHT = 640
 
 
 class QtFigure(FigureCanvas):
@@ -78,8 +85,16 @@ class Radar_Viewer(QMainWindow):
         self.init_main_ui_setting()
         self.init_timers()
 
+        self.img_queue = deque()
+        self.current_image_index = -1
+        self.init_img_queue()
+
+        self.radar_viewer.pushButton_pre.clicked.connect(self.pre_image)
+        self.radar_viewer.pushButton_next.clicked.connect(self.next_image)
+
         # self.showFullScreen()
         # self.showMaximized()
+
     def init_manu_bar(self):
         # init menu
         self.cam_manager = CameraManager()
@@ -126,12 +141,15 @@ class Radar_Viewer(QMainWindow):
         self.radar_viewer.lineEdit_image_capture_period.move(50, 90)
         self.radar_viewer.lineEdit_image_capture_period.returnPressed.connect(self.set_image_capture_period)
 
-        self.radar_viewer.horizontalSlider_video_brightness.setRange(0,200)
-        self.radar_viewer.horizontalSlider_video_contrast.setRange(0,100)
+        self.radar_viewer.horizontalSlider_video_brightness.setRange(0, 200)
+        self.radar_viewer.horizontalSlider_video_contrast.setRange(0, 100)
         self.radar_viewer.horizontalSlider_video_brightness.setValue(self.cam_manager.brightness)
         self.radar_viewer.horizontalSlider_video_contrast.setValue(self.cam_manager.contrast)
         self.radar_viewer.horizontalSlider_video_brightness.valueChanged.connect(self.set_video_brightness)
         self.radar_viewer.horizontalSlider_video_contrast.valueChanged.connect(self.set_video_contrast)
+
+        self.cv_trigger_enable = False
+        self.radar_trigger_enable = False
 
     def set_video_brightness(self):
         self.cam_manager.brightness = self.radar_viewer.horizontalSlider_video_brightness.value()
@@ -140,8 +158,6 @@ class Radar_Viewer(QMainWindow):
     def set_video_contrast(self):
         self.cam_manager.contrast = self.radar_viewer.horizontalSlider_video_contrast.value()
         self.cam_manager.update_camera_info(self.cam_manager.id)
-
-
 
     def init_timers(self):
         # set video update timer
@@ -199,11 +215,11 @@ class Radar_Viewer(QMainWindow):
     def plot_scatter(self):
         point_num = 10
 
-        #self.qtfig.fig.canvas.draw_idle()
+        # self.qtfig.fig.canvas.draw_idle()
         # if self.scatter_collection:
         #     self.scatter_collection.remove()
 
-        #self.draw_axis()
+        # self.draw_axis()
         if self.scatter_collection:
             self.scatter_collection.remove()
             self.qtfig.fig.canvas.draw_idle()
@@ -269,7 +285,7 @@ class Radar_Viewer(QMainWindow):
 
             if self.detector_enable:
                 frame1 = Image.fromarray(frame)
-                self.detector.detect_image(frame1)
+                _, self.exist_person = self.detector.detect_image(frame1)
                 frame = np.asarray(frame1)
 
             point = np.array(imagePoints[0][0, 0, :]).astype(int)
@@ -280,6 +296,15 @@ class Radar_Viewer(QMainWindow):
                        (point[0] - 20, point[1] - 25), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
 
             self.frame = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
+            # print(type(self.frame))
+            if self.cv_trigger_enable:
+                if self.exist_person:
+                    self.save_img(self.frame)
+
+            if self.radar_trigger_enable and not self.exist_person:
+                if self.obstacle_in_area:
+                    self.save_img(self.frame)
+
             self.image = QImage(self.frame.data, self.frame.shape[1], self.frame.shape[0], QImage.Format_RGB888)
             self.pixmap = QPixmap.fromImage(self.image)
             self.scaled_pixmap = self.pixmap.scaled(self.video_width, self.video_height,
@@ -318,6 +343,53 @@ class Radar_Viewer(QMainWindow):
         #                                         transformMode=Qt.SmoothTransformation)
         # self.radar_viewer.label_video.setPixmap(self.scaled_pixmap)
         print("resize event")
+
+    def save_img(self, img):
+        filename = time.ctime().replace(":", " ")
+        img_name = "{}\\{}.jpg".format(os.path.realpath(IMG_PATH), filename)
+        if cv.imwrite(img_name, img):
+            self.img_queue.append(img_name)
+            self.show_image(self.current_image_index)
+
+    def show_newest_img(self):
+        newest_img = self.img_queue[-1]
+        frame = cv.imread(newest_img)
+
+        # self.radar_viewer.tab_image.label_image = 0
+
+    def show_image(self, index):
+        try:
+            if len(self.img_queue):
+                newest_img = self.img_queue[index]
+                frame = cv.imread(newest_img, cv.COLOR_BGR2RGB)
+                image = QImage(frame.data, frame.shape[1], frame.shape[0], QImage.Format_RGB888)
+                pixmap = QPixmap.fromImage(image)
+                scaled_pixmap = pixmap.scaled(IMAGE_WIDTH, IMAGE_HEIGHT,
+                                              aspectRatioMode=Qt.KeepAspectRatioByExpanding,
+                                              transformMode=Qt.SmoothTransformation)
+                self.radar_viewer.label_photo.setPixmap(scaled_pixmap)
+        except Exception as e:
+            print(e)
+
+    def pre_image(self):
+        if len(self.img_queue):
+            self.current_image_index = -1 if self.current_image_index + 1 < -len(
+                self.img_queue) else self.current_image_index - 1
+            self.show_image(self.current_image_index)
+
+    def next_image(self):
+        if len(self.img_queue):
+            self.current_image_index = -len(
+                self.img_queue) if self.current_image_index + 1 > -1 else self.current_image_index + 1
+            self.show_image(self.current_image_index)
+
+    def init_img_queue(self):
+
+        imgs_list = glob.glob(IMG_PATH + "/*.jpg")
+        imgs_list.sort(key=lambda f: os.path.getctime(f))
+        self.img_queue.clear()
+        self.img_queue.extend(imgs_list)
+        self.show_image(self.current_image_index)
 
 
 app = QApplication(sys.argv)
