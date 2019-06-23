@@ -283,6 +283,7 @@ class Radar_Viewer(QMainWindow):
 
             imagePoints = cv.projectPoints(objectPoints, rvec, tvec, mtx, dist)
 
+            self.exist_person = False
             if self.detector_enable:
                 frame1 = Image.fromarray(frame)
                 _, self.exist_person = self.detector.detect_image(frame1)
