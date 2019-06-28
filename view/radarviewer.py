@@ -67,7 +67,6 @@ class Radar_Viewer(QMainWindow):
         self.radar_viewer.tab_widget.setCurrentIndex(0)
 
         self.init_manu_bar()
-        self.load_radar_axis()
 
         self.radar_max_x_abs = 10
         self.radar_max_y_abs = 10
@@ -81,6 +80,7 @@ class Radar_Viewer(QMainWindow):
         self.initial_width = 10
         self.initial_deepth = 10
 
+        self.load_radar_axis()
 
 
         # init video
@@ -99,8 +99,6 @@ class Radar_Viewer(QMainWindow):
 
         self.com = None
         self.radar_receive_thread = None
-
-
 
         self.radar_viewer.pushButton_pre.clicked.connect(self.pre_image)
         self.radar_viewer.pushButton_next.clicked.connect(self.next_image)
@@ -123,8 +121,9 @@ class Radar_Viewer(QMainWindow):
         # self.plot_scatter()
         self.gridlayout = QGridLayout(self.radar_viewer.groupBox_radar)
         self.gridlayout.addWidget(self.qtfig)
-
+        self.draw_axis()
         self.scatter_collection = None
+        self.texts = None
 
     def init_main_ui_setting(self):
         # init setting
@@ -232,24 +231,18 @@ class Radar_Viewer(QMainWindow):
         [p.remove() for p in reversed(self.qtfig.axes.patches)]
 
     def plot_scatter(self,x,y):
-        point_num = 10
+        [text.remove() for text in reversed(self.qtfig.axes.texts)]
 
-        # self.qtfig.fig.canvas.draw_idle()
-        # if self.scatter_collection:
-        #     self.scatter_collection.remove()
-
-        # self.draw_axis()
         if self.scatter_collection:
-            self.scatter_collection.remove()
-            self.qtfig.fig.canvas.draw_idle()
+           self.scatter_collection.remove()
 
-        self.draw_axis()
+           self.qtfig.fig.canvas.draw_idle()
 
-        # self.scatter_collection = self.qtfig.axes.scatter(
-        #     np.random.uniform(self.radar_x_min, self.radar_x_max, point_num),
-        #     np.random.uniform(self.radar_y_min, self.radar_y_max, point_num))
+        #self.draw_axis()
 
         self.scatter_collection = self.qtfig.axes.scatter(x,y)
+        for x1, y1 in zip(x, y):
+            self.qtfig.axes.text(x1, y1,'({},{})'.format(round(x1,1), round(y1,1)))
 
     def update_radar(self, *args):
         # if self.scatter_collection:
@@ -274,7 +267,7 @@ class Radar_Viewer(QMainWindow):
         try:
             if self.com:
                 if self.radar_receive_thread:
-                    self.radar_receive_thread.stop()
+                    self.radar_receive_thread.exit()
                 self.com.close()
 
             self.serial_setting_dialog = serial_setting.SerialSettingDialog(self.uart_cfg)

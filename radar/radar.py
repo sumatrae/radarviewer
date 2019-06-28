@@ -91,6 +91,7 @@ class RadarReceiveThread(QThread):
         self.com = com
 
     def run(self):
+        self.read_buffer = bytes()
         while self.com.is_open:
             try:
                 lines = self.com.read(4096)
@@ -106,7 +107,7 @@ class RadarReceiveThread(QThread):
 
         print("buffer length:", buffer_len)
 
-        if buffer_len >= HEADER_SIZE:
+        while buffer_len >= HEADER_SIZE:
             hex_str = self.read_buffer.hex()
             index = hex_str.find("0201040306050807")
             if index == -1:
@@ -130,8 +131,8 @@ class RadarReceiveThread(QThread):
             # print(int(total_packet_lenght, 16))
             if buffer_len >= total_package_length:
                 # print("package:", hex_str[:total_package_len * 2])
-                print(hex(magic_word), version, total_package_length, hex(platform), frame_number, time_cpucycle,
-                      num_detected_objection, num_tlvs, sumframe_numbers)
+                #print(hex(magic_word), version, total_package_length, hex(platform), frame_number, time_cpucycle,
+                 #     num_detected_objection, num_tlvs, sumframe_numbers)
 
                 main_payload = self.read_buffer[HEADER_SIZE:total_package_length]
                 self.parser_main_payload(num_tlvs, main_payload)
@@ -153,13 +154,14 @@ class RadarReceiveThread(QThread):
             tlv_payload = main_payload[TLV_HEADER_LEN:TLV_HEADER_LEN + tlv_length]
 
             if tlv_type == MMWDEMO_UART_MSG_CLUSTERS:
-                print("MMWDEMO_UART_MSG_CLUSTERS")
+                #print("MMWDEMO_UART_MSG_CLUSTERS")
                 x, y, x_size, y_size = self.get_clusters_loction(tlv_payload)
                 # msg_queue.put((x, y, x_size, y_size))
-                print((x, y, x_size, y_size))
+                #print((x, y, x_size, y_size))
                 self.update.emit((x, y, x_size, y_size))
             else:
-                print("other msg")
+                #print("other msg")
+                pass
 
             main_payload = main_payload[TLV_HEADER_LEN + tlv_length:]
 
