@@ -31,6 +31,7 @@ from collections import deque
 import camera_setting
 import serial_setting
 import about
+import radar
 import time
 
 from PIL import Image
@@ -68,13 +69,19 @@ class Radar_Viewer(QMainWindow):
         self.init_manu_bar()
         self.load_radar_axis()
 
-        self.radar_max_x_abs = 50
-        self.radar_max_y_abs = 200
+        self.radar_max_x_abs = 10
+        self.radar_max_y_abs = 10
         self.radar_y_max = self.radar_max_y_abs
         self.radar_y_min = 0
         self.radar_x_max = self.radar_max_x_abs
         self.radar_x_min = -self.radar_max_x_abs
-        self.handle_radar_capture_area_setting()
+
+        self.initial_startx = -5
+        self.initial_starty = 0
+        self.initial_width = 10
+        self.initial_deepth = 10
+
+
 
         # init video
         self.video_width = 1200
@@ -83,11 +90,17 @@ class Radar_Viewer(QMainWindow):
         self.detector_enable = False
 
         self.init_main_ui_setting()
+        self.handle_radar_capture_area_setting()
         self.init_timers()
 
         self.img_queue = deque()
         self.current_image_index = -1
         self.init_img_queue()
+
+        self.com = None
+        self.radar_receive_thread = None
+
+
 
         self.radar_viewer.pushButton_pre.clicked.connect(self.pre_image)
         self.radar_viewer.pushButton_next.clicked.connect(self.next_image)
@@ -131,6 +144,12 @@ class Radar_Viewer(QMainWindow):
         self.radar_viewer.lineEdit_radar_capture_deepth.setValidator(re_validato)  # 设置验证
         self.radar_viewer.lineEdit_radar_capture_deepth.move(50, 90)
 
+        self.radar_viewer.lineEdit_radar_startx.setText(str(self.initial_startx))
+        self.radar_viewer.lineEdit_radar_starty.setText(str(self.initial_starty))
+        self.radar_viewer.lineEdit_radar_capture_width.setText(str(self.initial_width))
+        self.radar_viewer.lineEdit_radar_capture_deepth.setText(str(self.initial_deepth))
+
+
         self.radar_viewer.lineEdit_radar_startx.returnPressed.connect(self.handle_radar_capture_area_setting)
         self.radar_viewer.lineEdit_radar_starty.returnPressed.connect(self.handle_radar_capture_area_setting)
         self.radar_viewer.lineEdit_radar_capture_width.returnPressed.connect(self.handle_radar_capture_area_setting)
@@ -167,7 +186,7 @@ class Radar_Viewer(QMainWindow):
 
         self.radar_update_timer = QTimer(self)
         self.radar_update_timer.timeout.connect(self.update_radar)
-        self.radar_update_timer.start(1000)
+        #self.radar_update_timer.start(1000)
 
     def set_image_capture_period(self):
         print(self.radar_viewer.lineEdit_image_capture_period.text())
@@ -212,7 +231,7 @@ class Radar_Viewer(QMainWindow):
     def delete_capture_area(self):
         [p.remove() for p in reversed(self.qtfig.axes.patches)]
 
-    def plot_scatter(self):
+    def plot_scatter(self,x,y):
         point_num = 10
 
         # self.qtfig.fig.canvas.draw_idle()
@@ -226,15 +245,25 @@ class Radar_Viewer(QMainWindow):
 
         self.draw_axis()
 
-        self.scatter_collection = self.qtfig.axes.scatter(
-            np.random.uniform(self.radar_x_min, self.radar_x_max, point_num),
-            np.random.uniform(self.radar_y_min, self.radar_y_max, point_num))
+        # self.scatter_collection = self.qtfig.axes.scatter(
+        #     np.random.uniform(self.radar_x_min, self.radar_x_max, point_num),
+        #     np.random.uniform(self.radar_y_min, self.radar_y_max, point_num))
 
-    def update_radar(self):
+        self.scatter_collection = self.qtfig.axes.scatter(x,y)
+
+    def update_radar(self, *args):
         # if self.scatter_collection:
         #     self.scatter_collection.remove()
+        print(args)
+        x,y,x_size,y_size = args[0]
         plt.clf()
-        self.plot_scatter()
+        self.plot_scatter(x,y)
+
+        for x1,y1 in zip(x,y):
+            if  self.radar_startx<= x1 <= self.radar_startx + self.radar_capture_width  \
+                and self.radar_starty <= y1 <= self.radar_starty + self.radar_capture_deepth:
+                self.obstacle_in_area = True
+                return
 
     def start_camera_setting_dialog(self):
         self.camera_setting_dialog = camera_setting.CameraSettingDialog(self.cam_manager)
@@ -243,6 +272,11 @@ class Radar_Viewer(QMainWindow):
 
     def start_serial_setting_dialog(self):
         try:
+            if self.com:
+                if self.radar_receive_thread:
+                    self.radar_receive_thread.stop()
+                self.com.close()
+
             self.serial_setting_dialog = serial_setting.SerialSettingDialog(self.uart_cfg)
             self.serial_setting_dialog.serial_setting_signal.connect(self.update_uart_info)
             self.serial_setting_dialog.show()
@@ -269,7 +303,13 @@ class Radar_Viewer(QMainWindow):
         self.frame_update_timer.start((int)(1000.0 / self.cam_manager.framerate))
 
     def update_uart_info(self, uart_config_msg):
+
         self.uart_cfg = uart_config_msg
+
+        self.com = UartManager.create_instance(self.uart_cfg)
+        self.radar_receive_thread = radar.RadarReceiveThread(self, self.com)
+        self.radar_receive_thread.update.connect(self.update_radar)
+        self.radar_receive_thread.start()
 
     def update_video(self):
         ret, frame = self.cam_manager.cam.take_photo()
@@ -298,12 +338,15 @@ class Radar_Viewer(QMainWindow):
 
             self.frame = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
             # print(type(self.frame))
+            stored_flag = False
             if self.cv_trigger_enable:
                 if self.exist_person:
                     self.save_img(self.frame)
+                    stored_flag = True
 
-            if self.radar_trigger_enable and not self.exist_person:
+            if self.radar_trigger_enable and not stored_flag:
                 if self.obstacle_in_area:
+                    self.obstacle_in_area = False
                     self.save_img(self.frame)
 
             self.image = QImage(self.frame.data, self.frame.shape[1], self.frame.shape[0], QImage.Format_RGB888)
