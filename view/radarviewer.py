@@ -82,7 +82,6 @@ class Radar_Viewer(QMainWindow):
 
         self.load_radar_axis()
 
-
         # init video
         self.video_width = 1200
         self.video_height = 540
@@ -148,7 +147,6 @@ class Radar_Viewer(QMainWindow):
         self.radar_viewer.lineEdit_radar_capture_width.setText(str(self.initial_width))
         self.radar_viewer.lineEdit_radar_capture_deepth.setText(str(self.initial_deepth))
 
-
         self.radar_viewer.lineEdit_radar_startx.returnPressed.connect(self.handle_radar_capture_area_setting)
         self.radar_viewer.lineEdit_radar_starty.returnPressed.connect(self.handle_radar_capture_area_setting)
         self.radar_viewer.lineEdit_radar_capture_width.returnPressed.connect(self.handle_radar_capture_area_setting)
@@ -185,7 +183,7 @@ class Radar_Viewer(QMainWindow):
 
         self.radar_update_timer = QTimer(self)
         self.radar_update_timer.timeout.connect(self.update_radar)
-        #self.radar_update_timer.start(1000)
+        # self.radar_update_timer.start(1000)
 
     def set_image_capture_period(self):
         print(self.radar_viewer.lineEdit_image_capture_period.text())
@@ -230,31 +228,31 @@ class Radar_Viewer(QMainWindow):
     def delete_capture_area(self):
         [p.remove() for p in reversed(self.qtfig.axes.patches)]
 
-    def plot_scatter(self,x,y):
+    def plot_scatter(self, x, y):
         [text.remove() for text in reversed(self.qtfig.axes.texts)]
 
         if self.scatter_collection:
-           self.scatter_collection.remove()
+            self.scatter_collection.remove()
 
-           self.qtfig.fig.canvas.draw_idle()
+            self.qtfig.fig.canvas.draw_idle()
 
-        #self.draw_axis()
+        # self.draw_axis()
 
-        self.scatter_collection = self.qtfig.axes.scatter(x,y)
+        self.scatter_collection = self.qtfig.axes.scatter(x, y)
         for x1, y1 in zip(x, y):
-            self.qtfig.axes.text(x1, y1,'({},{})'.format(round(x1,1), round(y1,1)))
+            self.qtfig.axes.text(x1, y1, '({},{})'.format(round(x1, 1), round(y1, 1)))
 
     def update_radar(self, *args):
         # if self.scatter_collection:
         #     self.scatter_collection.remove()
         print(args)
-        x,y,x_size,y_size = args[0]
+        x, y, x_size, y_size = args[0]
         plt.clf()
-        self.plot_scatter(x,y)
+        self.plot_scatter(x, y)
 
-        for x1,y1 in zip(x,y):
-            if  self.radar_startx<= x1 <= self.radar_startx + self.radar_capture_width  \
-                and self.radar_starty <= y1 <= self.radar_starty + self.radar_capture_deepth:
+        for x1, y1 in zip(x, y):
+            if self.radar_startx <= x1 <= self.radar_startx + self.radar_capture_width \
+                    and self.radar_starty <= y1 <= self.radar_starty + self.radar_capture_deepth:
                 self.obstacle_in_area = True
                 return
 

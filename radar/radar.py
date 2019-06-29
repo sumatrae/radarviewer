@@ -91,6 +91,7 @@ class RadarReceiveThread(QThread):
         self.com = com
 
     def run(self):
+        self.com.reset_input_buffer()
         self.read_buffer = bytes()
         while self.com.is_open:
             try:
@@ -154,11 +155,19 @@ class RadarReceiveThread(QThread):
             tlv_payload = main_payload[TLV_HEADER_LEN:TLV_HEADER_LEN + tlv_length]
 
             if tlv_type == MMWDEMO_UART_MSG_CLUSTERS:
+                pass
                 #print("MMWDEMO_UART_MSG_CLUSTERS")
-                x, y, x_size, y_size = self.get_clusters_loction(tlv_payload)
+                #x, y, x_size, y_size = self.get_clusters_loction(tlv_payload)
                 # msg_queue.put((x, y, x_size, y_size))
                 #print((x, y, x_size, y_size))
-                self.update.emit((x, y, x_size, y_size))
+                #self.update.emit((x, y, x_size, y_size))
+            elif tlv_type == MMWDEMO_UART_MSG_TRACKED_OBJ:
+                # print("MMWDEMO_UART_MSG_CLUSTERS")
+                x, y, dx, dy = self.get_trackers(tlv_payload)
+                # msg_queue.put((x, y, x_size, y_size))
+                # print((x, y, x_size, y_size))
+                self.update.emit((x, y, dx, dy))
+
             else:
                 #print("other msg")
                 pass
@@ -197,3 +206,43 @@ class RadarReceiveThread(QThread):
         # print(x_size, y_size)
 
         return x, y, x_size, y_size
+
+
+    def get_trackers(self, tlv_payload):
+        obj_description = tlv_payload[:OBJ_DESC_LEN]
+        obj_payload = tlv_payload[OBJ_DESC_LEN:]
+        obj_num, xyz_qformat = struct.unpack("<HH", obj_description)
+        # print(obj_num, xyz_qformat)
+        xyx_qformat = pow(1 / 2, xyz_qformat)
+
+        x = np.zeros(obj_num)
+        y = np.zeros(obj_num)
+        dx = np.zeros(obj_num)
+        dy = np.zeros(obj_num)
+        x_size = np.zeros(obj_num)
+        y_size = np.zeros(obj_num)
+
+        for j in range(obj_num):
+            obj = obj_payload[j * TRACKER_STRUCT_SIZE_BYTES:(j + 1) * TRACKER_STRUCT_SIZE_BYTES]
+            x[j], y[j], dx[j], dy[j], x_size[j], y_size[j] = [s for s in struct.unpack("<HHHHHH", obj)]
+
+        # print(x, y, x_size, y_size)
+
+        x[x > 32767] = x[x > 32767] - 65535
+        y[y > 32767] = y[y > 32767] - 65535
+        dx[dx > 32767] = dx[dx > 32767] - 65535
+        dy[dy > 32767] = dy[dy > 32767] - 65535
+        x *= xyx_qformat
+        y *= xyx_qformat
+        dx *= xyx_qformat
+        dy *= xyx_qformat
+        x_size *= xyx_qformat
+        y_size *= xyx_qformat
+        # print(x, y, x_size, y_size)
+
+        # area = 4 * x_size * y_size
+        # x_size[x_size > 20] = np.inf
+
+        # print(x_size, y_size)
+
+        return x, y, dx, dy
