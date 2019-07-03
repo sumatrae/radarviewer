@@ -4,14 +4,13 @@ import os
 import re
 import sys
 
-from PyQt5.QtCore import Qt, QTimer, pyqtSlot, QThread
-from PyQt5.QtGui import QIcon, QPalette, QImage,QPixmap
+import cv2
+from PyQt5.QtCore import Qt, QThread, QTimer, pyqtSignal, pyqtSlot
+from PyQt5.QtGui import QIcon, QImage, QPalette, QPixmap
 from PyQt5.QtWidgets import QApplication, QDialog, QMainWindow, QMessageBox
 from PyQt5.uic import loadUi
 
 from radar import *
-from PyQt5.QtCore import pyqtSignal
-import cv2
 
 parity_invers = dict(zip(PARITY_DICT.values(), PARITY_DICT.keys()))
 bytesize_invers = dict(zip(BYTESIZE_DICT.values(), BYTESIZE_DICT.keys()))

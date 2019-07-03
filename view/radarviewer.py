@@ -1,45 +1,38 @@
 import configparser
 import gc
+import glob
 import os
+import random
 import re
 import sys
-
-import random
-
-from PyQt5.QtCore import Qt, QTimer, pyqtSlot, QThread
-from PyQt5.QtGui import QIcon, QPalette, QImage, QPixmap
-from PyQt5.QtWidgets import QApplication, QDialog, QMainWindow, QMessageBox, QGridLayout
-from PyQt5.uic import loadUi
-from PyQt5.QtGui import QIntValidator, QDoubleValidator, QRegExpValidator
-# 导入Qt正则模块
-from PyQt5.QtCore import QRegExp
-
-import matplotlib
-
-matplotlib.use("Qt5Agg")  # 声明使用QT5
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.figure import Figure
-import matplotlib.pyplot as plt
-
-from camera import Camera
-from camera import CameraManager
+import threading
+import time
+from collections import deque
 
 import cv2 as cv
-
-import threading
-from collections import deque
-import camera_setting
-import serial_setting
-import about
-import radar
-import time
-
+import matplotlib
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_qt5agg import \
+    FigureCanvasQTAgg as FigureCanvas
+from matplotlib.figure import Figure
 from PIL import Image
-from processing import *
+# 导入Qt正则模块
+from PyQt5.QtCore import QRegExp, Qt, QThread, QTimer, pyqtSlot
+from PyQt5.QtGui import (QDoubleValidator, QIcon, QImage, QIntValidator,
+                         QPalette, QPixmap, QRegExpValidator)
+from PyQt5.QtWidgets import (QApplication, QDialog, QGridLayout, QMainWindow,
+                             QMessageBox)
+from PyQt5.uic import loadUi
 
+import about
+import camera_setting
+import radar
+import serial_setting
+from camera import Camera, CameraManager
+from processing import *
 from radar import *
-import glob
-from collections import deque
+
+matplotlib.use("Qt5Agg")  # 声明使用QT5
 
 # 棋盘格模板规格
 CHESSBOARD_W_NUM = 11
@@ -54,7 +47,7 @@ IMAGE_HEIGHT = 640
 class QtFigure(FigureCanvas):
     def __init__(self, width=3, height=2, dpi=100):
         self.fig = Figure(figsize=(width, height), dpi=dpi)
-        super(QtFigure, self).__init__(self.fig)  # 此句必不可少，否则不能显示图形
+        super(QtFigure, self).__init__(self.fig)
         self.axes = self.fig.gca()
 
 
@@ -102,7 +95,7 @@ class Radar_Viewer(QMainWindow):
         self.radar_viewer.pushButton_pre.clicked.connect(self.pre_image)
         self.radar_viewer.pushButton_next.clicked.connect(self.next_image)
 
-        # self.showFullScreen()
+        #self.showFullScreen()
         # self.showMaximized()
 
     def init_manu_bar(self):
@@ -113,16 +106,6 @@ class Radar_Viewer(QMainWindow):
         self.uart_cfg = UartConfig("COM0")
         self.radar_viewer.actionRadar_Setting.triggered.connect(self.start_serial_setting_dialog)
         self.radar_viewer.actionAbout.triggered.connect(self.start_about_dialog)
-
-    def load_radar_axis(self):
-        # load radar axis
-        self.qtfig = QtFigure(width=6, height=4, dpi=100)
-        # self.plot_scatter()
-        self.gridlayout = QGridLayout(self.radar_viewer.groupBox_radar)
-        self.gridlayout.addWidget(self.qtfig)
-        self.draw_axis()
-        self.scatter_collection = None
-        self.texts = None
 
     def init_main_ui_setting(self):
         # init setting
@@ -167,6 +150,14 @@ class Radar_Viewer(QMainWindow):
         self.cv_trigger_enable = False
         self.radar_trigger_enable = False
 
+    def load_radar_axis(self):
+        self.qtfig = QtFigure(width=6, height=4, dpi=100)
+        self.gridlayout = QGridLayout(self.radar_viewer.groupBox_radar)
+        self.gridlayout.addWidget(self.qtfig)
+        self.draw_axis()
+        self.scatter_collection = None
+        self.texts = None
+
     def set_video_brightness(self):
         self.cam_manager.brightness = self.radar_viewer.horizontalSlider_video_brightness.value()
         self.cam_manager.update_camera_info(self.cam_manager.id)
@@ -176,13 +167,12 @@ class Radar_Viewer(QMainWindow):
         self.cam_manager.update_camera_info(self.cam_manager.id)
 
     def init_timers(self):
-        # set video update timer
         self.frame_update_timer = QTimer(self)
         self.frame_update_timer.timeout.connect(self.update_video)
         self.frame_update_timer.start((int)(1000.0 / self.cam_manager.framerate))
 
-        self.radar_update_timer = QTimer(self)
-        self.radar_update_timer.timeout.connect(self.update_radar)
+        # self.radar_update_timer = QTimer(self)
+        # self.radar_update_timer.timeout.connect(self.update_radar)
         # self.radar_update_timer.start(1000)
 
     def set_image_capture_period(self):
@@ -233,18 +223,13 @@ class Radar_Viewer(QMainWindow):
 
         if self.scatter_collection:
             self.scatter_collection.remove()
-
             self.qtfig.fig.canvas.draw_idle()
-
-        # self.draw_axis()
 
         self.scatter_collection = self.qtfig.axes.scatter(x, y)
         for x1, y1 in zip(x, y):
             self.qtfig.axes.text(x1, y1, '({},{})'.format(round(x1, 1), round(y1, 1)))
 
     def update_radar(self, *args):
-        # if self.scatter_collection:
-        #     self.scatter_collection.remove()
         print(args)
         x, y, x_size, y_size = args[0]
         plt.clf()
@@ -280,6 +265,7 @@ class Radar_Viewer(QMainWindow):
 
     def update_camera_info(self, camera_config_msg):
         self.frame_update_timer.stop()
+
         self.cam_manager.framerate = camera_config_msg.framerate
         self.cam_manager.resolution[0] = camera_config_msg.resolution[0]
         self.cam_manager.resolution[1] = camera_config_msg.resolution[1]
@@ -294,9 +280,7 @@ class Radar_Viewer(QMainWindow):
         self.frame_update_timer.start((int)(1000.0 / self.cam_manager.framerate))
 
     def update_uart_info(self, uart_config_msg):
-
         self.uart_cfg = uart_config_msg
-
         self.com = UartManager.create_instance(self.uart_cfg)
         self.radar_receive_thread = radar.RadarReceiveThread(self, self.com)
         self.radar_receive_thread.update.connect(self.update_radar)
@@ -342,9 +326,8 @@ class Radar_Viewer(QMainWindow):
 
             self.image = QImage(self.frame.data, self.frame.shape[1], self.frame.shape[0], QImage.Format_RGB888)
             self.pixmap = QPixmap.fromImage(self.image)
-            self.scaled_pixmap = self.pixmap.scaled(self.video_width, self.video_height,
-                                                    aspectRatioMode=Qt.KeepAspectRatioByExpanding,
-                                                    transformMode=Qt.SmoothTransformation)
+            self.scaled_pixmap = self.pixmap.scaled(
+                self.video_width, self.video_height,aspectRatioMode=Qt.KeepAspectRatioByExpanding,transformMode=Qt.SmoothTransformation)
             self.radar_viewer.label_video.setPixmap(self.scaled_pixmap)
 
     def set_cv_detector(self):
@@ -372,12 +355,15 @@ class Radar_Viewer(QMainWindow):
             self.save_picture_auto = False
 
     def resizeEvent(self, event):
-        # self.scaled_pixmap = self.pixmap.scaled(self.radar_viewer.label_video.width(),
-        #                                         self.radar_viewer.label_video.height(),
-        #                                         aspectRatioMode=Qt.KeepAspectRatioByExpanding,
-        #                                         transformMode=Qt.SmoothTransformation)
-        # self.radar_viewer.label_video.setPixmap(self.scaled_pixmap)
-        print("resize event")
+        # print("resize event")
+        pass
+
+    def init_img_queue(self):
+        imgs_list = glob.glob(IMG_PATH + "/*.jpg")
+        imgs_list.sort(key=lambda f: os.path.getctime(f))
+        self.img_queue.clear()
+        self.img_queue.extend(imgs_list)
+        self.show_image(self.current_image_index)
 
     def save_img(self, img):
         filename = time.ctime().replace(":", " ")
@@ -385,12 +371,6 @@ class Radar_Viewer(QMainWindow):
         if cv.imwrite(img_name, img):
             self.img_queue.append(img_name)
             self.show_image(self.current_image_index)
-
-    def show_newest_img(self):
-        newest_img = self.img_queue[-1]
-        frame = cv.imread(newest_img)
-
-        # self.radar_viewer.tab_image.label_image = 0
 
     def show_image(self, index):
         try:
@@ -418,16 +398,8 @@ class Radar_Viewer(QMainWindow):
                 self.img_queue) if self.current_image_index + 1 > -1 else self.current_image_index + 1
             self.show_image(self.current_image_index)
 
-    def init_img_queue(self):
-
-        imgs_list = glob.glob(IMG_PATH + "/*.jpg")
-        imgs_list.sort(key=lambda f: os.path.getctime(f))
-        self.img_queue.clear()
-        self.img_queue.extend(imgs_list)
-        self.show_image(self.current_image_index)
-
-
-app = QApplication(sys.argv)
-main_window = Radar_Viewer()
-main_window.show()
-sys.exit(app.exec_())
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+    main_window = Radar_Viewer()
+    main_window.show()
+    sys.exit(app.exec_())

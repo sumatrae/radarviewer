@@ -4,30 +4,24 @@ import os
 import re
 import sys
 
-from PyQt5.QtCore import Qt, QTimer, pyqtSlot, QThread
-from PyQt5.QtGui import QIcon, QPalette, QImage,QPixmap
+import cv2
+from PyQt5.QtCore import Qt, QThread, QTimer, pyqtSignal, pyqtSlot
+from PyQt5.QtGui import QIcon, QImage, QPalette, QPixmap
 from PyQt5.QtWidgets import QApplication, QDialog, QMainWindow, QMessageBox
 from PyQt5.uic import loadUi
 
-from PyQt5.QtCore import pyqtSignal
-
-# from camera import Camera
-# from camera import CameraManager
-
 from camera import CameraCfg
-
-import cv2
 
 class CameraSettingDialog(QDialog):
     camera_setting_signal = pyqtSignal(CameraCfg)
 
-    def __init__(self,camera_config, *args):
+    def __init__(self, camera_config, *args):
         super(CameraSettingDialog, self).__init__(*args)
         self.init_ui(camera_config)
 
         self.camera_setting_dialog.buttonBox.clicked.connect(self.send_edited_camera_cfg)
 
-    def init_ui(self,camera_config):
+    def init_ui(self, camera_config):
         self.camera_setting_dialog = loadUi("./ui/camera_setting.ui", self)
         self.camera_setting_dialog.comboBox_camera.addItems(camera_config.camera_list)
         self.camera_setting_dialog.comboBox_camera.setCurrentIndex(camera_config.id)
