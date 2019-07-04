@@ -1,27 +1,15 @@
-import configparser
-import gc
 import glob
-import os
-import random
-import re
 import sys
-import threading
-import time
 from collections import deque
 
 import cv2 as cv
 import matplotlib
 import matplotlib.pyplot as plt
-from matplotlib.backends.backend_qt5agg import \
-    FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
-from PIL import Image
-# 导入Qt正则模块
-from PyQt5.QtCore import QRegExp, Qt, QThread, QTimer, pyqtSlot
-from PyQt5.QtGui import (QDoubleValidator, QIcon, QImage, QIntValidator,
-                         QPalette, QPixmap, QRegExpValidator)
-from PyQt5.QtWidgets import (QApplication, QDialog, QGridLayout, QMainWindow,
-                             QMessageBox)
+from PyQt5.QtCore import QRegExp, Qt, QTimer
+from PyQt5.QtGui import ( QImage, QIntValidator, QPixmap, QRegExpValidator)
+from PyQt5.QtWidgets import (QApplication, QGridLayout, QMainWindow)
 from PyQt5.uic import loadUi
 
 import about
@@ -95,7 +83,7 @@ class Radar_Viewer(QMainWindow):
         self.radar_viewer.pushButton_pre.clicked.connect(self.pre_image)
         self.radar_viewer.pushButton_next.clicked.connect(self.next_image)
 
-        #self.showFullScreen()
+        # self.showFullScreen()
         # self.showMaximized()
 
     def init_manu_bar(self):
@@ -283,7 +271,10 @@ class Radar_Viewer(QMainWindow):
         self.uart_cfg = uart_config_msg
         self.com = UartManager.create_instance(self.uart_cfg)
         self.radar_receive_thread = radar.RadarReceiveThread(self, self.com)
-        self.radar_receive_thread.update.connect(self.update_radar)
+        self.radar_msg_process_thread = radar.RadarMsgProcessThread(self)
+        self.radar_msg_process_thread.update.connect(self.update_radar)
+        self.radar_msg_process_thread.start()
+        #self.radar_receive_thread.update.connect(self.update_radar)
         self.radar_receive_thread.start()
 
     def update_video(self):
@@ -326,9 +317,10 @@ class Radar_Viewer(QMainWindow):
 
             self.image = QImage(self.frame.data, self.frame.shape[1], self.frame.shape[0], QImage.Format_RGB888)
             self.pixmap = QPixmap.fromImage(self.image)
-            self.scaled_pixmap = self.pixmap.scaled(
-                self.video_width, self.video_height,aspectRatioMode=Qt.KeepAspectRatioByExpanding,transformMode=Qt.SmoothTransformation)
-            self.radar_viewer.label_video.setPixmap(self.scaled_pixmap)
+            # self.scaled_pixmap = self.pixmap.scaled(
+            #     self.video_width, self.video_height, aspectRatioMode=Qt.KeepAspectRatioByExpanding,
+            #     transformMode=Qt.SmoothTransformation)
+            self.radar_viewer.label_video.setPixmap(self.pixmap)
 
     def set_cv_detector(self):
         if self.radar_viewer.checkBox_detector_switch.checkState() == Qt.Checked:
@@ -397,6 +389,7 @@ class Radar_Viewer(QMainWindow):
             self.current_image_index = -len(
                 self.img_queue) if self.current_image_index + 1 > -1 else self.current_image_index + 1
             self.show_image(self.current_image_index)
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

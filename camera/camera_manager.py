@@ -7,8 +7,8 @@ class CameraCfg():
         self.id = 0
         self.framerate = 30
         self.resolution = [1280,720]
-        self.brightness = 0
-        self.contrast = 0
+        self.brightness = 50
+        self.contrast = 20
         self.gain = 0
         self.cam = None
 
@@ -23,6 +23,7 @@ class CameraManager(CameraCfg):
 
         self.cam = self.get_camera_instance(0)
         if self.cam:
+            self.set_camera_cfg()
             self.read_camera_cfg()
 
     def update_camera_info(self, id):
