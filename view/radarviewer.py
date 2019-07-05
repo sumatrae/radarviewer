@@ -68,6 +68,7 @@ class Radar_Viewer(QMainWindow):
         self.video_height = 540
         self.detector = YOLO()
         self.detector_enable = False
+        self.init_dectecor_session()
 
         self.init_main_ui_setting()
         self.handle_radar_capture_area_setting()
@@ -86,6 +87,11 @@ class Radar_Viewer(QMainWindow):
         # self.showFullScreen()
         # self.showMaximized()
 
+    def init_dectecor_session(self):
+        frame = np.zeros((32,32,3)).astype('uint8')
+        frame1 = Image.fromarray(frame)
+        _, _ = self.detector.detect_image(frame1)
+
     def init_manu_bar(self):
         # init menu
         self.cam_manager = CameraManager()
@@ -100,7 +106,7 @@ class Radar_Viewer(QMainWindow):
         self.radar_viewer.checkBox_detector_switch.stateChanged.connect(self.set_cv_detector)
         self.radar_viewer.checkBox_cv_trigger.stateChanged.connect(self.set_cv_trigger)
         self.radar_viewer.checkBox_radar_trigger.stateChanged.connect(self.set_radar_trigger)
-        self.radar_viewer.checkBox_save_picture_auto.stateChanged.connect(self.set_save_picture_auto)
+        # self.radar_viewer.checkBox_save_picture_auto.stateChanged.connect(self.set_save_picture_auto)
 
         re_float = QRegExp("(-*[1-9][0-9]{0,2}|0)([\.][0-9]{1,2})*")
         re_validato = QRegExpValidator(re_float, self)  # 实例化正则验证器
@@ -123,10 +129,10 @@ class Radar_Viewer(QMainWindow):
         self.radar_viewer.lineEdit_radar_capture_width.returnPressed.connect(self.handle_radar_capture_area_setting)
         self.radar_viewer.lineEdit_radar_capture_deepth.returnPressed.connect(self.handle_radar_capture_area_setting)
 
-        int_validato = QIntValidator(1, 999999, self)
-        self.radar_viewer.lineEdit_image_capture_period.setValidator(int_validato)  # 设置验证
-        self.radar_viewer.lineEdit_image_capture_period.move(50, 90)
-        self.radar_viewer.lineEdit_image_capture_period.returnPressed.connect(self.set_image_capture_period)
+        # int_validato = QIntValidator(1, 999999, self)
+        # self.radar_viewer.lineEdit_image_capture_period.setValidator(int_validato)  # 设置验证
+        # self.radar_viewer.lineEdit_image_capture_period.move(50, 90)
+        # self.radar_viewer.lineEdit_image_capture_period.returnPressed.connect(self.set_image_capture_period)
 
         self.radar_viewer.horizontalSlider_video_brightness.setRange(0, 200)
         self.radar_viewer.horizontalSlider_video_contrast.setRange(0, 100)
@@ -148,11 +154,13 @@ class Radar_Viewer(QMainWindow):
 
     def set_video_brightness(self):
         self.cam_manager.brightness = self.radar_viewer.horizontalSlider_video_brightness.value()
-        self.cam_manager.update_camera_info(self.cam_manager.id)
+        self.cam_manager.cam.set_brightness(self.cam_manager.brightness)
+
 
     def set_video_contrast(self):
         self.cam_manager.contrast = self.radar_viewer.horizontalSlider_video_contrast.value()
-        self.cam_manager.update_camera_info(self.cam_manager.id)
+        self.cam_manager.cam.set_contrast(self.cam_manager.contrast)
+
 
     def init_timers(self):
         self.frame_update_timer = QTimer(self)
@@ -163,8 +171,8 @@ class Radar_Viewer(QMainWindow):
         # self.radar_update_timer.timeout.connect(self.update_radar)
         # self.radar_update_timer.start(1000)
 
-    def set_image_capture_period(self):
-        print(self.radar_viewer.lineEdit_image_capture_period.text())
+    # def set_image_capture_period(self):
+    #     print(self.radar_viewer.lineEdit_image_capture_period.text())
 
     def handle_radar_capture_area_setting(self):
         radar_startx = float(self.radar_viewer.lineEdit_radar_startx.text())
@@ -220,7 +228,7 @@ class Radar_Viewer(QMainWindow):
     def update_radar(self, *args):
         print(args)
         x, y, x_size, y_size = args[0]
-        plt.clf()
+        #plt.clf()
         self.plot_scatter(x, y)
 
         for x1, y1 in zip(x, y):
@@ -287,20 +295,25 @@ class Radar_Viewer(QMainWindow):
             #     cv.cornerSubPix(gray, corners, (11, 11), (-1, -1), CRITERIA)
             #     cv.drawChessboardCorners(frame, (w, h), corners, ret)
 
-            imagePoints = cv.projectPoints(objectPoints, rvec, tvec, mtx, dist)
+            #imagePoints = cv.projectPoints(objectPoints, rvec, tvec, mtx, dist)
 
             self.exist_person = False
             if self.detector_enable:
+                # start = time.time()
                 frame1 = Image.fromarray(frame)
                 _, self.exist_person = self.detector.detect_image(frame1)
                 frame = np.asarray(frame1)
+                # stop = time.time()
+                # print("detector processing time:",stop - start)
+                # self.frame_update_timer.stop()
 
-            point = np.array(imagePoints[0][0, 0, :]).astype(int)
-            cv.circle(frame, tuple(point), 2, (0, 0, 255), 4)
 
-            cv.rectangle(frame, tuple(point - 20), tuple(point + 20), (0, 255, 0), 3)
-            cv.putText(frame, "({},{}),1.2m/s".format(objectPoints[0, 0] / 1000, objectPoints[0, 2] / 1000),
-                       (point[0] - 20, point[1] - 25), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
+            #point = np.array(imagePoints[0][0, 0, :]).astype(int)
+            #cv.circle(frame, tuple(point), 2, (0, 0, 255), 4)
+
+            #cv.rectangle(frame, tuple(point - 20), tuple(point + 20), (0, 255, 0), 3)
+            #cv.putText(frame, "({},{}),1.2m/s".format(objectPoints[0, 0] / 1000, objectPoints[0, 2] / 1000),
+            #           (point[0] - 20, point[1] - 25), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
 
             self.frame = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
             # print(type(self.frame))
@@ -323,10 +336,12 @@ class Radar_Viewer(QMainWindow):
             self.radar_viewer.label_video.setPixmap(self.pixmap)
 
     def set_cv_detector(self):
+        self.frame_update_timer.stop()
         if self.radar_viewer.checkBox_detector_switch.checkState() == Qt.Checked:
             self.detector_enable = True
         elif self.radar_viewer.checkBox_detector_switch.checkState() == Qt.Unchecked:
             self.detector_enable = False
+        self.frame_update_timer.start()
 
     def set_cv_trigger(self):
         if self.radar_viewer.checkBox_cv_trigger.checkState() == Qt.Checked:
@@ -340,11 +355,11 @@ class Radar_Viewer(QMainWindow):
         elif self.radar_viewer.checkBox_radar_trigger.checkState() == Qt.Unchecked:
             self.radar_trigger_enable = False
 
-    def set_save_picture_auto(self):
-        if self.radar_viewer.checkBox_save_picture_auto.checkState() == Qt.Checked:
-            self.save_picture_auto = True
-        elif self.radar_viewer.checkBox_save_picture_auto.checkState() == Qt.Unchecked:
-            self.save_picture_auto = False
+    # def set_save_picture_auto(self):
+    #     if self.radar_viewer.checkBox_save_picture_auto.checkState() == Qt.Checked:
+    #         self.save_picture_auto = True
+    #     elif self.radar_viewer.checkBox_save_picture_auto.checkState() == Qt.Unchecked:
+    #         self.save_picture_auto = False
 
     def resizeEvent(self, event):
         # print("resize event")

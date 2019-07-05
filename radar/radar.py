@@ -51,11 +51,11 @@ MMWDEMO_UART_MSG_STATS = 6
 TLV_HEADER_LEN = 8
 OBJ_DESC_LEN = 4
 
-radar_raw_msg_queue = deque()
+radar_raw_msg_queue = deque(maxlen=10)
 
 
 class UartConfig():
-    def __init__(self, com_id="COM0", baudrate=921600, timeout=None, bytesize=serial.EIGHTBITS,
+    def __init__(self, com_id="COM0", baudrate=921600, timeout= None, bytesize=serial.EIGHTBITS,
                  stopbits=serial.STOPBITS_ONE, parity=serial.PARITY_NONE):
         self.com_id = com_id
         self.baudrate = baudrate
@@ -105,7 +105,8 @@ class RadarReceiveThread(QThread):
                     self.find_radar_frame()
             except Exception as e:
                 self.read_buffer = bytes()
-                print(e)
+                #print('radar uart receive thread err')
+                #print(e)
 
     def find_radar_frame(self):
         buffer_len = len(self.read_buffer)
@@ -113,18 +114,20 @@ class RadarReceiveThread(QThread):
         print("buffer length:", buffer_len)
 
         while buffer_len >= HEADER_SIZE:
+
             hex_str = self.read_buffer.hex()
             index = hex_str.find("0201040306050807")
+
             if index == -1:
                 return
+
             elif index > 0:
                 self.read_buffer = self.read_buffer[index // 2:]
+
                 buffer_len = len(self.read_buffer)
                 if HEADER_SIZE > buffer_len:
                     return
 
-            # print("Magic word found index:", index)
-            # print("Header:", hex_str[:HEADER_SIZE * 2])
             header = self.read_buffer[:HEADER_SIZE]
             magic_word, version, total_package_length, platform, frame_number, time_cpucycle, num_detected_objection, \
             num_tlvs, sumframe_numbers = [i for i in struct.unpack("<QIIIIIIII", header)]
@@ -133,108 +136,15 @@ class RadarReceiveThread(QThread):
                 self.read_buffer = self.read_buffer[HEADER_SIZE:]
                 return
 
-            # print(int(total_packet_lenght, 16))
             if buffer_len >= total_package_length:
-                # print("package:", hex_str[:total_package_len * 2])
-                # print(hex(magic_word), version, total_package_length, hex(platform), frame_number, time_cpucycle,
-                #     num_detected_objection, num_tlvs, sumframe_numbers)
 
                 main_payload = self.read_buffer[HEADER_SIZE:total_package_length]
-                # self.parser_main_payload(num_tlvs, main_payload)
-                radar_raw_msg_queue.append((num_tlvs, main_payload.deepcopy()))
+                radar_raw_msg_queue.append((num_tlvs, main_payload))
 
                 if total_package_length % 32 != 0:
                     total_package_length = 32 * ((total_package_length // 32) + 1)
 
                 self.read_buffer = self.read_buffer[total_package_length:]
-
-    def parser_main_payload(self, num_tlvs, main_payload):
-        for i in range(num_tlvs):
-            tlv_header = main_payload[:TLV_HEADER_LEN]
-            if len(tlv_header) != TLV_HEADER_LEN:
-                print("tlv header len err:", len(tlv_header))
-                continue
-
-            tlv_type, tlv_length = struct.unpack("<II", tlv_header)
-            tlv_payload = main_payload[TLV_HEADER_LEN:TLV_HEADER_LEN + tlv_length]
-
-            if tlv_type == MMWDEMO_UART_MSG_CLUSTERS:
-                pass
-                # print("MMWDEMO_UART_MSG_CLUSTERS")
-                # x, y, x_size, y_size = self.get_clusters_loction(tlv_payload)
-                # msg_queue.put((x, y, x_size, y_size))
-                # print((x, y, x_size, y_size))
-                # self.update.emit((x, y, x_size, y_size))
-            elif tlv_type == MMWDEMO_UART_MSG_TRACKED_OBJ:
-                x, y, dx, dy = self.get_trackers(tlv_payload)
-                # msg_queue.put((x, y, x_size, y_size))
-                # print((x, y, x_size, y_size))
-                self.update.emit((x, y, dx, dy))
-
-            else:
-                # print("other msg")
-                pass
-
-            main_payload = main_payload[TLV_HEADER_LEN + tlv_length:]
-
-    def get_clusters_loction(self, tlv_payload):
-        obj_description = tlv_payload[:OBJ_DESC_LEN]
-        obj_payload = tlv_payload[OBJ_DESC_LEN:]
-        obj_num, xyz_qformat = struct.unpack("<HH", obj_description)
-
-        xyx_qformat = pow(1 / 2, xyz_qformat)
-
-        x = np.zeros(obj_num)
-        y = np.zeros(obj_num)
-        x_size = np.zeros(obj_num)
-        y_size = np.zeros(obj_num)
-
-        for j in range(obj_num):
-            obj = obj_payload[j * CLUSTER_STRUCT_SIZE_BYTES:(j + 1) * CLUSTER_STRUCT_SIZE_BYTES]
-            x[j], y[j], x_size[j], y_size[j] = [s for s in struct.unpack("<HHHH", obj)]
-
-        x[x > 32767] = x[x > 32767] - 65535
-        y[y > 32767] = y[y > 32767] - 65535
-        x *= xyx_qformat
-        y *= xyx_qformat
-        x_size *= xyx_qformat
-        y_size *= xyx_qformat
-
-        area = 4 * x_size * y_size
-        x_size[x_size > 20] = np.inf
-
-        return x, y, x_size, y_size
-
-    def get_trackers(self, tlv_payload):
-        obj_description = tlv_payload[:OBJ_DESC_LEN]
-        obj_payload = tlv_payload[OBJ_DESC_LEN:]
-        obj_num, xyz_qformat = struct.unpack("<HH", obj_description)
-
-        xyx_qformat = pow(1 / 2, xyz_qformat)
-
-        x = np.zeros(obj_num)
-        y = np.zeros(obj_num)
-        dx = np.zeros(obj_num)
-        dy = np.zeros(obj_num)
-        x_size = np.zeros(obj_num)
-        y_size = np.zeros(obj_num)
-
-        for j in range(obj_num):
-            obj = obj_payload[j * TRACKER_STRUCT_SIZE_BYTES:(j + 1) * TRACKER_STRUCT_SIZE_BYTES]
-            x[j], y[j], dx[j], dy[j], x_size[j], y_size[j] = [s for s in struct.unpack("<HHHHHH", obj)]
-
-        x[x > 32767] = x[x > 32767] - 65535
-        y[y > 32767] = y[y > 32767] - 65535
-        dx[dx > 32767] = dx[dx > 32767] - 65535
-        dy[dy > 32767] = dy[dy > 32767] - 65535
-        x *= xyx_qformat
-        y *= xyx_qformat
-        dx *= xyx_qformat
-        dy *= xyx_qformat
-        x_size *= xyx_qformat
-        y_size *= xyx_qformat
-
-        return x, y, dx, dy
 
 
 class RadarMsgProcessThread(QThread):
@@ -245,39 +155,53 @@ class RadarMsgProcessThread(QThread):
 
     def run(self):
         while True:
-            tlvs_num, payload = radar_raw_msg_queue.popleft()
-            print(tlvs_num)
-            self.parser_main_payload(tlvs_num, payload)
-
+            try:
+                tlvs_num, payload = radar_raw_msg_queue.popleft()
+                # print(tlvs_num)
+                # print(payload)
+                self.parser_main_payload(tlvs_num, payload)
+            except IndexError as e:
+                #print(e)
+                time.sleep(0.06)
 
     def parser_main_payload(self, num_tlvs, main_payload):
-        for i in range(num_tlvs):
-            tlv_header = main_payload[:TLV_HEADER_LEN]
-            if len(tlv_header) != TLV_HEADER_LEN:
-                print("tlv header len err:", len(tlv_header))
-                continue
+        try:
+            if num_tlvs > MAX_NUM_TRACKERS:
+                return
 
-            tlv_type, tlv_length = struct.unpack("<II", tlv_header)
-            tlv_payload = main_payload[TLV_HEADER_LEN:TLV_HEADER_LEN + tlv_length]
+            if main_payload is None:
+                return
 
-            if tlv_type == MMWDEMO_UART_MSG_CLUSTERS:
-                pass
-                # print("MMWDEMO_UART_MSG_CLUSTERS")
-                # x, y, x_size, y_size = self.get_clusters_loction(tlv_payload)
-                # msg_queue.put((x, y, x_size, y_size))
-                # print((x, y, x_size, y_size))
-                # self.update.emit((x, y, x_size, y_size))
-            elif tlv_type == MMWDEMO_UART_MSG_TRACKED_OBJ:
-                x, y, dx, dy = self.get_trackers(tlv_payload)
-                # msg_queue.put((x, y, x_size, y_size))
-                # print((x, y, x_size, y_size))
-                self.update.emit((x, y, dx, dy))
+            for i in range(num_tlvs):
+                tlv_header = main_payload[:TLV_HEADER_LEN]
+                if len(tlv_header) != TLV_HEADER_LEN:
+                    print("tlv header len err:", len(tlv_header))
+                    continue
 
-            else:
-                # print("other msg")
-                pass
+                tlv_type, tlv_length = struct.unpack("<II", tlv_header)
+                tlv_payload = main_payload[TLV_HEADER_LEN:TLV_HEADER_LEN + tlv_length]
 
-            main_payload = main_payload[TLV_HEADER_LEN + tlv_length:]
+                if tlv_type == MMWDEMO_UART_MSG_CLUSTERS:
+                    pass
+                    # print("MMWDEMO_UART_MSG_CLUSTERS")
+                    # x, y, x_size, y_size = self.get_clusters_loction(tlv_payload)
+                    # msg_queue.put((x, y, x_size, y_size))
+                    # print((x, y, x_size, y_size))
+                    # self.update.emit((x, y, x_size, y_size))
+                elif tlv_type == MMWDEMO_UART_MSG_TRACKED_OBJ:
+                    x, y, dx, dy = self.get_trackers(tlv_payload)
+                    # msg_queue.put((x, y, x_size, y_size))
+                    # print((x, y, x_size, y_size))
+                    self.update.emit((x, y, dx, dy))
+
+                else:
+                    # print("other msg")
+                    pass
+
+                main_payload = main_payload[TLV_HEADER_LEN + tlv_length:]
+        except Exception as e:
+            print('radar msg processing thread err')
+            print(e)
 
     def get_clusters_loction(self, tlv_payload):
         obj_description = tlv_payload[:OBJ_DESC_LEN]
