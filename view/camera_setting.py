@@ -11,7 +11,7 @@ class CameraSettingDialog(QDialog):
         super(CameraSettingDialog, self).__init__(*args)
         self.init_ui(camera_config)
 
-        self.camera_setting_dialog.buttonBox.clicked.connect(self.send_edited_camera_cfg)
+        self.camera_setting_dialog.buttonBox.accepted.connect(self.send_edited_camera_cfg)
 
     def init_ui(self, camera_config):
         self.camera_setting_dialog = loadUi("./ui/camera_setting.ui", self)

@@ -102,13 +102,13 @@ class RadarReceiveThread(QThread):
                 lines = self.com.read(4096)
                 if lines:
                     self.read_buffer += lines
-                    self.find_radar_frame()
+                    self._find_radar_frame()
             except Exception as e:
                 self.read_buffer = bytes()
                 #print('radar uart receive thread err')
                 #print(e)
 
-    def find_radar_frame(self):
+    def _find_radar_frame(self):
         buffer_len = len(self.read_buffer)
 
         print("buffer length:", buffer_len)
@@ -134,10 +134,10 @@ class RadarReceiveThread(QThread):
 
             if 0x0a1642 != platform:
                 self.read_buffer = self.read_buffer[HEADER_SIZE:]
+                print("platform isn't 1642")
                 return
 
             if buffer_len >= total_package_length:
-
                 main_payload = self.read_buffer[HEADER_SIZE:total_package_length]
                 radar_raw_msg_queue.append((num_tlvs, main_payload))
 
@@ -159,12 +159,12 @@ class RadarMsgProcessThread(QThread):
                 tlvs_num, payload = radar_raw_msg_queue.popleft()
                 # print(tlvs_num)
                 # print(payload)
-                self.parser_main_payload(tlvs_num, payload)
+                self._parser_main_payload(tlvs_num, payload)
             except IndexError as e:
                 #print(e)
                 time.sleep(0.06)
 
-    def parser_main_payload(self, num_tlvs, main_payload):
+    def _parser_main_payload(self, num_tlvs, main_payload):
         try:
             if num_tlvs > MAX_NUM_TRACKERS:
                 return
@@ -189,7 +189,7 @@ class RadarMsgProcessThread(QThread):
                     # print((x, y, x_size, y_size))
                     # self.update.emit((x, y, x_size, y_size))
                 elif tlv_type == MMWDEMO_UART_MSG_TRACKED_OBJ:
-                    x, y, dx, dy = self.get_trackers(tlv_payload)
+                    x, y, dx, dy = self._get_trackers(tlv_payload)
                     # msg_queue.put((x, y, x_size, y_size))
                     # print((x, y, x_size, y_size))
                     self.update.emit((x, y, dx, dy))
@@ -203,7 +203,7 @@ class RadarMsgProcessThread(QThread):
             print('radar msg processing thread err')
             print(e)
 
-    def get_clusters_loction(self, tlv_payload):
+    def _get_clusters_loction(self, tlv_payload):
         obj_description = tlv_payload[:OBJ_DESC_LEN]
         obj_payload = tlv_payload[OBJ_DESC_LEN:]
         obj_num, xyz_qformat = struct.unpack("<HH", obj_description)
@@ -231,7 +231,7 @@ class RadarMsgProcessThread(QThread):
 
         return x, y, x_size, y_size
 
-    def get_trackers(self, tlv_payload):
+    def _get_trackers(self, tlv_payload):
         obj_description = tlv_payload[:OBJ_DESC_LEN]
         obj_payload = tlv_payload[OBJ_DESC_LEN:]
         obj_num, xyz_qformat = struct.unpack("<HH", obj_description)

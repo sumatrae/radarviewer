@@ -20,7 +20,7 @@
    <enum>Qt::NoContextMenu</enum>
   </property>
   <property name="windowTitle">
-   <string>视频雷达系统-成都多普勒科技有限公司</string>
+   <string>雷达视频融合系统-成都多普勒科技有限公司</string>
   </property>
   <property name="windowIcon">
    <iconset>
@@ -488,7 +488,7 @@
               </property>
               <property name="icon">
                <iconset>
-                <normaloff>C:/Users/Lenovo/.designer/backup/icon/previous.png</normaloff>C:/Users/Lenovo/.designer/backup/icon/previous.png</iconset>
+                <normaloff>icon/previous.png</normaloff>icon/previous.png</iconset>
               </property>
               <property name="iconSize">
                <size>
@@ -563,7 +563,7 @@
               </property>
               <property name="icon">
                <iconset>
-                <normaloff>C:/Users/Lenovo/.designer/backup/icon/next.png</normaloff>C:/Users/Lenovo/.designer/backup/icon/next.png</iconset>
+                <normaloff>icon/next.png</normaloff>icon/next.png</iconset>
               </property>
               <property name="iconSize">
                <size>

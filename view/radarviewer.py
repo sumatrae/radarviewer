@@ -143,6 +143,7 @@ class Radar_Viewer(QMainWindow):
 
         self.cv_trigger_enable = False
         self.radar_trigger_enable = False
+        self.obstacle_in_area = False
 
     def load_radar_axis(self):
         self.qtfig = QtFigure(width=6, height=4, dpi=100)
