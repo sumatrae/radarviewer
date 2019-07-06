@@ -2,11 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="f0829eef-f558-4101-87e8-e07c46d9c07d" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/encodings.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/encodings.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/radar/radar.py" beforeDir="false" afterPath="$PROJECT_DIR$/radar/radar.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/view/radarviewer.py" beforeDir="false" afterPath="$PROJECT_DIR$/view/radarviewer.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/view/ui/radar_viewer.ui" beforeDir="false" afterPath="$PROJECT_DIR$/view/ui/radar_viewer.ui" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/processing/yolo/yolo.py" beforeDir="false" afterPath="$PROJECT_DIR$/processing/yolo/yolo.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -17,7 +14,7 @@
   <component name="CoverageDataManager">
     <SUITE FILE_PATH="coverage/radarviewer$uart.coverage" NAME="uart Coverage Results" MODIFIED="1561720419205" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/radar" />
     <SUITE FILE_PATH="coverage/radarviewer$uart__1_.coverage" NAME="uart (1) Coverage Results" MODIFIED="1562253845146" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/legacy/can" />
-    <SUITE FILE_PATH="coverage/radarviewer$radarviewer.coverage" NAME="radarviewer Coverage Results" MODIFIED="1562346138191" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/view" />
+    <SUITE FILE_PATH="coverage/radarviewer$radarviewer.coverage" NAME="radarviewer Coverage Results" MODIFIED="1562391191720" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/view" />
     <SUITE FILE_PATH="coverage/radarviewer$pycantest.coverage" NAME="pycantest Coverage Results" MODIFIED="1561470499763" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/radar" />
     <SUITE FILE_PATH="coverage/radarviewer$can.coverage" NAME="can Coverage Results" MODIFIED="1561469336966" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/radar" />
   </component>
@@ -41,97 +38,91 @@
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/view/radarviewer.py">
+        <entry file="file://$PROJECT_DIR$/processing/yolo/kmeans.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-24">
-              <caret line="237" column="22" selection-start-line="237" selection-start-column="22" selection-end-line="237" selection-end-column="22" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$APPLICATION_HOME_DIR$/helpers/pydev/pydevd.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="331">
-              <caret line="1740" selection-start-line="1740" selection-end-line="1740" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://D:/pyvenv/doppler/Lib/site-packages/PIL/Image.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="113">
-              <caret line="2537" selection-start-line="2537" selection-end-line="2537" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://D:/pyvenv/doppler/Lib/site-packages/keras/engine/saving.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="185">
-              <caret line="387" column="9" selection-start-line="387" selection-start-column="9" selection-end-line="387" selection-end-column="9" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/processing/yolo/yolo.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-789">
-              <caret line="29" column="5" lean-forward="true" selection-start-line="29" selection-start-column="5" selection-end-line="29" selection-end-column="5" />
-              <folding>
-                <element signature="e#102#117#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/camera/camera_manager.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="241">
-              <caret line="31" column="24" selection-start-line="31" selection-start-column="24" selection-end-line="31" selection-end-column="24" />
-              <folding>
-                <element signature="e#0#13#0" expanded="true" />
-              </folding>
-            </state>
+            <state relative-caret-position="-1399" />
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/radar/radar.py">
+        <entry file="file://$PROJECT_DIR$/processing/yolo/yolo.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="351">
-              <caret line="158" column="65" selection-start-line="158" selection-start-column="65" selection-end-line="158" selection-end-column="65" />
+            <state relative-caret-position="210">
+              <caret line="133" column="40" selection-start-line="133" selection-start-column="40" selection-end-line="133" selection-end-column="40" />
+              <folding>
+                <element signature="e#101#107#0" expanded="true" />
+              </folding>
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://D:/pyvenv/doppler/Lib/site-packages/serial/serialutil.py">
+        <entry file="file://$PROJECT_DIR$/processing/yolo/convert.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="244">
-              <caret line="181" column="24" selection-start-line="181" selection-start-column="17" selection-end-line="181" selection-end-column="24" />
+            <state relative-caret-position="210">
+              <caret line="28" column="9" lean-forward="true" selection-start-line="28" selection-start-column="9" selection-end-line="28" selection-end-column="9" />
+              <folding>
+                <element signature="e#107#122#0" expanded="true" />
+              </folding>
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://D:/pyvenv/doppler/Lib/site-packages/serial/serialjava.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-541">
-              <caret line="96" column="73" selection-start-line="96" selection-start-column="73" selection-end-line="96" selection-end-column="73" />
+        <entry file="file://$PROJECT_DIR$/processing/yolo/README.md">
+          <provider selected="true" editor-type-id="split-provider[text-editor;markdown-preview-editor]">
+            <state split_layout="SPLIT">
+              <first_editor relative-caret-position="-1197" />
+              <second_editor />
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$USER_HOME$/AppData/Local/Programs/Python/Python36/Lib/codecs.py">
+        <entry file="file://$PROJECT_DIR$/processing/yolo/train.py">
+          <provider selected="true" editor-type-id="text-editor" />
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/processing/__init__.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="307">
-              <caret line="310" selection-start-line="310" selection-end-line="310" />
+            <state>
+              <folding>
+                <element signature="e#0#37#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/processing/yolo/train_bottleneck.py">
+          <provider selected="true" editor-type-id="text-editor" />
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/processing/yolo/voc_annotation.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state>
+              <folding>
+                <element signature="e#0#34#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/processing/yolo/yolov3.cfg">
+          <provider selected="true" editor-type-id="text-editor" />
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/processing/yolo/yolo_video.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="659">
+              <caret line="74" column="15" selection-start-line="74" selection-start-column="15" selection-end-line="74" selection-end-column="15" />
+              <folding>
+                <element signature="e#0#10#0" expanded="true" />
+              </folding>
             </state>
           </provider>
         </entry>
@@ -206,8 +197,8 @@
         <option value="$PROJECT_DIR$/camera/camera_manager.py" />
         <option value="$PROJECT_DIR$/radar/radar_processing.py" />
         <option value="$PROJECT_DIR$/view/radarviewer.py" />
-        <option value="$PROJECT_DIR$/processing/yolo/yolo.py" />
         <option value="$PROJECT_DIR$/radar/radar.py" />
+        <option value="$PROJECT_DIR$/processing/yolo/yolo.py" />
       </list>
     </option>
   </component>
@@ -233,7 +224,6 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
-      <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -249,17 +239,14 @@
             <path>
               <item name="radarviewer" type="b2602c69:ProjectViewProjectNode" />
               <item name="radarviewer" type="462c0819:PsiDirectoryNode" />
-              <item name="radar" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="radarviewer" type="b2602c69:ProjectViewProjectNode" />
-              <item name="radarviewer" type="462c0819:PsiDirectoryNode" />
-              <item name="view" type="462c0819:PsiDirectoryNode" />
+              <item name="processing" type="462c0819:PsiDirectoryNode" />
+              <item name="yolo" type="462c0819:PsiDirectoryNode" />
             </path>
           </expand>
           <select />
         </subPane>
       </pane>
+      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -449,12 +436,13 @@
       <workItem from="1562159588167" duration="5927000" />
       <workItem from="1562246694588" duration="312000" />
       <workItem from="1562247472494" duration="4957000" />
-      <workItem from="1562336524090" duration="9549000" />
+      <workItem from="1562336524090" duration="9821000" />
+      <workItem from="1562390649171" duration="404000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="243842000" />
+    <option name="totallyTimeSpent" value="244518000" />
   </component>
   <component name="TodoView">
     <todo-panel id="selected-file">
@@ -469,11 +457,11 @@
     <frame x="-8" y="-8" width="1936" height="1056" extended-state="6" />
     <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.053452116" weight="0.12313433" />
+      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.053452116" visible="true" weight="0.1641791" />
       <window_info auto_hide="true" id="Favorites" order="1" sideWeight="0.5068493" type="SLIDING" weight="0.17537314" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" weight="0.49443206" />
-      <window_info active="true" anchor="bottom" id="Run" order="2" visible="true" weight="0.29955456" />
+      <window_info anchor="bottom" id="Run" order="2" weight="0.29955456" />
       <window_info anchor="bottom" id="Debug" order="3" weight="0.28396437" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
@@ -483,7 +471,7 @@
       <window_info anchor="bottom" id="Database Changes" order="9" />
       <window_info anchor="bottom" id="Event Log" order="10" side_tool="true" />
       <window_info anchor="bottom" id="Terminal" order="11" weight="0.21603563" />
-      <window_info anchor="bottom" id="Python Console" order="12" weight="0.29955456" />
+      <window_info active="true" anchor="bottom" id="Python Console" order="12" visible="true" weight="0.29955456" />
       <window_info active="true" anchor="bottom" id="Concurrent Activities Diagram" order="13" visible="true" weight="0.32962137" />
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
@@ -492,7 +480,7 @@
       <window_info anchor="right" x="0" y="0" width="434" height="856" id="Documentation" order="4" sideWeight="0.50325733" side_tool="true" visible="true" weight="0.29690832" />
       <window_info anchor="right" id="Database" order="5" weight="0.32995737" />
       <window_info anchor="right" id="Coverage" order="6" side_tool="true" />
-      <window_info anchor="right" x="1118" y="43" width="352" height="1040" id="Structure" order="7" sideWeight="0.94654787" visible="true" weight="0.17537314" />
+      <window_info anchor="right" x="1118" y="43" width="352" height="1040" id="Structure" order="7" sideWeight="0.94654787" visible="true" weight="0.07462686" />
     </layout>
     <layout-to-restore>
       <window_info content_ui="combo" id="Project" order="0" sideWeight="0.49542218" visible="true" weight="0.17537314" />
@@ -607,53 +595,6 @@
     </expressions>
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://D:/pyvenv/doppler/Lib/site-packages/matplotlib/axes/_base.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="235">
-          <caret line="1961" column="8" selection-start-line="1961" selection-start-column="8" selection-end-line="1961" selection-end-column="8" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/temp/a.txt" />
-    <entry file="file://D:/pyvenv/doppler/Lib/site-packages/cv2/__init__.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state>
-          <folding>
-            <element signature="e#0#16#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/radar/msg.py" />
-    <entry file="file://$USER_HOME$/AppData/Local/Programs/Python/Python36/Lib/collections/__init__.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="22659">
-          <caret line="1080" column="8" selection-start-line="1080" selection-start-column="8" selection-end-line="1080" selection-end-column="8" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://D:/pyvenv/doppler/Lib/site-packages/matplotlib/axes/_axes.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="91560">
-          <caret line="4396" column="55" selection-start-line="4396" selection-start-column="18" selection-end-line="4396" selection-end-column="55" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://D:/pyvenv/doppler/Lib/site-packages/can/util.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="140">
-          <caret line="196" selection-start-line="196" selection-end-line="196" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://D:/pyvenv/doppler/Lib/site-packages/can/interface.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="245">
-          <caret line="103" column="39" lean-forward="true" selection-start-line="103" selection-start-column="39" selection-end-line="103" selection-end-column="39" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/radar/pycantest.py" />
     <entry file="file://$PROJECT_DIR$/radar/decoder.py" />
     <entry file="file://$USER_HOME$/AppData/Local/Programs/Python/Python36/Lib/ctypes/__init__.py">
       <provider selected="true" editor-type-id="text-editor">
@@ -779,13 +720,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/processing/detector.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="210">
-          <caret line="10" selection-start-line="10" selection-end-line="10" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$USER_HOME$/.PyCharm2018.3/system/python_stubs/-1795778402/PyQt5/QtCore/QThread.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="-63">
@@ -845,37 +779,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://D:/pyvenv/doppler/Lib/site-packages/serial/serialutil.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="244">
-          <caret line="181" column="24" selection-start-line="181" selection-start-column="17" selection-end-line="181" selection-end-column="24" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://D:/pyvenv/doppler/Lib/site-packages/serial/serialjava.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-541">
-          <caret line="96" column="73" selection-start-line="96" selection-start-column="73" selection-end-line="96" selection-end-column="73" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/camera/camera_manager.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="241">
-          <caret line="31" column="24" selection-start-line="31" selection-start-column="24" selection-end-line="31" selection-end-column="24" />
-          <folding>
-            <element signature="e#0#13#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://D:/pyvenv/doppler/Lib/site-packages/keras/engine/saving.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="185">
-          <caret line="387" column="9" selection-start-line="387" selection-start-column="9" selection-end-line="387" selection-end-column="9" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://D:/pyvenv/doppler/Lib/site-packages/tensorflow/python/client/session.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="206">
@@ -883,41 +786,139 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$APPLICATION_HOME_DIR$/helpers/pydev/pydevd.py">
+    <entry file="file://$PROJECT_DIR$/view/radarviewer.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="331">
-          <caret line="1740" selection-start-line="1740" selection-end-line="1740" />
+        <state relative-caret-position="4557">
+          <caret line="237" column="22" selection-start-line="237" selection-start-column="22" selection-end-line="237" selection-end-column="22" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/view/radarviewer.py">
+    <entry file="file://$APPLICATION_HOME_DIR$/helpers/pydev/pydevd.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-24">
-          <caret line="237" column="22" selection-start-line="237" selection-start-column="22" selection-end-line="237" selection-end-column="22" />
+        <state relative-caret-position="36540">
+          <caret line="1740" selection-start-line="1740" selection-end-line="1740" />
         </state>
       </provider>
     </entry>
     <entry file="file://D:/pyvenv/doppler/Lib/site-packages/PIL/Image.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="113">
+        <state relative-caret-position="53172">
           <caret line="2537" selection-start-line="2537" selection-end-line="2537" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/processing/yolo/yolo.py">
+    <entry file="file://D:/pyvenv/doppler/Lib/site-packages/keras/engine/saving.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-789">
-          <caret line="29" column="5" lean-forward="true" selection-start-line="29" selection-start-column="5" selection-end-line="29" selection-end-column="5" />
+        <state relative-caret-position="7812">
+          <caret line="387" column="9" selection-start-line="387" selection-start-column="9" selection-end-line="387" selection-end-column="9" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/camera/camera_manager.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="630">
+          <caret line="31" column="24" selection-start-line="31" selection-start-column="24" selection-end-line="31" selection-end-column="24" />
           <folding>
-            <element signature="e#102#117#0" expanded="true" />
+            <element signature="e#0#13#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/radar/radar.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="351">
-          <caret line="158" column="65" selection-start-line="158" selection-start-column="65" selection-end-line="158" selection-end-column="65" />
+        <state relative-caret-position="4284">
+          <caret line="212" column="29" selection-start-line="212" selection-start-column="29" selection-end-line="212" selection-end-column="29" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://D:/pyvenv/doppler/Lib/site-packages/serial/serialutil.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="3780">
+          <caret line="181" column="24" selection-start-line="181" selection-start-column="17" selection-end-line="181" selection-end-column="24" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://D:/pyvenv/doppler/Lib/site-packages/serial/serialjava.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="2016">
+          <caret line="96" column="73" selection-start-line="96" selection-start-column="73" selection-end-line="96" selection-end-column="73" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/processing/detector.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="210">
+          <caret line="10" selection-start-line="10" selection-end-line="10" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/processing/yolo/kmeans.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-1399" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/processing/yolo/voc_annotation.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state>
+          <folding>
+            <element signature="e#0#34#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/processing/yolo/yolov3.cfg">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/processing/yolo/yolo_video.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="659">
+          <caret line="74" column="15" selection-start-line="74" selection-start-column="15" selection-end-line="74" selection-end-column="15" />
+          <folding>
+            <element signature="e#0#10#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/processing/__init__.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state>
+          <folding>
+            <element signature="e#0#37#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/processing/yolo/README.md">
+      <provider selected="true" editor-type-id="split-provider[text-editor;markdown-preview-editor]">
+        <state split_layout="SPLIT">
+          <first_editor relative-caret-position="-1197" />
+          <second_editor />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/processing/yolo/train.py">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/processing/yolo/train_bottleneck.py">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/processing/yolo/convert.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="210">
+          <caret line="28" column="9" lean-forward="true" selection-start-line="28" selection-start-column="9" selection-end-line="28" selection-end-column="9" />
+          <folding>
+            <element signature="e#107#122#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/processing/yolo/yolo.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="210">
+          <caret line="133" column="40" selection-start-line="133" selection-start-column="40" selection-end-line="133" selection-end-column="40" />
+          <folding>
+            <element signature="e#101#107#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
