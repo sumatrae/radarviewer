@@ -51,11 +51,12 @@ MMWDEMO_UART_MSG_STATS = 6
 TLV_HEADER_LEN = 8
 OBJ_DESC_LEN = 4
 
-radar_raw_msg_queue = deque(maxlen=10)
+radar_raw_msg_queue = deque(maxlen=16)
+radar_obj_msg_queue = deque(maxlen=4)
 
 
 class UartConfig():
-    def __init__(self, com_id="COM0", baudrate=921600, timeout= None, bytesize=serial.EIGHTBITS,
+    def __init__(self, com_id="COM0", baudrate=921600, timeout= 0.01, bytesize=serial.EIGHTBITS,
                  stopbits=serial.STOPBITS_ONE, parity=serial.PARITY_NONE):
         self.com_id = com_id
         self.baudrate = baudrate
@@ -98,53 +99,69 @@ class RadarReceiveThread(QThread):
         self.com.reset_input_buffer()
         self.read_buffer = bytes()
         while self.com.is_open:
+            start_time = time.time()
+            print('new:')
             try:
-                lines = self.com.read(4096)
+                lines = self.com.read(1024)
+                block_time = time.time()
+                print(block_time - start_time)
+                print(len(lines))
                 if lines:
                     self.read_buffer += lines
                     self._find_radar_frame()
             except Exception as e:
                 self.read_buffer = bytes()
-                #print('radar uart receive thread err')
-                #print(e)
+                print('radar uart receive thread err')
+                print(e)
+            finally:
+                end_time =  time.time()
+                print(end_time - block_time)
 
     def _find_radar_frame(self):
-        buffer_len = len(self.read_buffer)
+        try:
+            buffer_len = len(self.read_buffer)
 
-        print("buffer length:", buffer_len)
+            print("buffer len:", buffer_len)
 
-        while buffer_len >= HEADER_SIZE:
+            while buffer_len >= HEADER_SIZE:
 
-            hex_str = self.read_buffer.hex()
-            index = hex_str.find("0201040306050807")
+                hex_str = self.read_buffer.hex()
+                index = hex_str.find("0201040306050807")
+                print('Found magic word')
 
-            if index == -1:
-                return
-
-            elif index > 0:
-                self.read_buffer = self.read_buffer[index // 2:]
-
-                buffer_len = len(self.read_buffer)
-                if HEADER_SIZE > buffer_len:
+                if index == -1:
                     return
 
-            header = self.read_buffer[:HEADER_SIZE]
-            magic_word, version, total_package_length, platform, frame_number, time_cpucycle, num_detected_objection, \
-            num_tlvs, sumframe_numbers = [i for i in struct.unpack("<QIIIIIIII", header)]
+                elif index > 0:
+                    self.read_buffer = self.read_buffer[index // 2:]
 
-            if 0x0a1642 != platform:
-                self.read_buffer = self.read_buffer[HEADER_SIZE:]
-                print("platform isn't 1642")
-                return
+                    buffer_len = len(self.read_buffer)
+                    if HEADER_SIZE > buffer_len:
+                        return
 
-            if buffer_len >= total_package_length:
-                main_payload = self.read_buffer[HEADER_SIZE:total_package_length]
-                radar_raw_msg_queue.append((num_tlvs, main_payload))
+                header = self.read_buffer[:HEADER_SIZE]
+                magic_word, version, total_package_length, platform, frame_number, time_cpucycle, num_detected_objection, \
+                num_tlvs, sumframe_numbers = [i for i in struct.unpack("<QIIIIIIII", header)]
 
-                if total_package_length % 32 != 0:
-                    total_package_length = 32 * ((total_package_length // 32) + 1)
+                if 0x0a1642 != platform:
+                    self.read_buffer = self.read_buffer[HEADER_SIZE:]
+                    print("platform isn't 1642")
+                    return
 
-                self.read_buffer = self.read_buffer[total_package_length:]
+                if buffer_len >= total_package_length:
+                    main_payload = self.read_buffer[HEADER_SIZE:total_package_length]
+                    print(len(radar_raw_msg_queue))
+                    radar_raw_msg_queue.append((num_tlvs, main_payload))
+
+                    if total_package_length % 32 != 0:
+                        total_package_length = 32 * ((total_package_length // 32) + 1)
+
+                    self.read_buffer = self.read_buffer[total_package_length:]
+
+                else:
+                    return
+        except Exception as e:
+            print(e)
 
 
 class RadarMsgProcessThread(QThread):
@@ -156,6 +173,7 @@ class RadarMsgProcessThread(QThread):
     def run(self):
         while True:
             try:
+                print("radar raw msg queue:",len(radar_raw_msg_queue))
                 tlvs_num, payload = radar_raw_msg_queue.popleft()
                 # print(tlvs_num)
                 # print(payload)
@@ -175,13 +193,14 @@ class RadarMsgProcessThread(QThread):
             for i in range(num_tlvs):
                 tlv_header = main_payload[:TLV_HEADER_LEN]
                 if len(tlv_header) != TLV_HEADER_LEN:
-                    print("tlv header len err:", len(tlv_header))
+                    #print("tlv header len err:", len(tlv_header))
                     continue
 
                 tlv_type, tlv_length = struct.unpack("<II", tlv_header)
                 tlv_payload = main_payload[TLV_HEADER_LEN:TLV_HEADER_LEN + tlv_length]
 
                 if tlv_type == MMWDEMO_UART_MSG_CLUSTERS:
+                    #self.update.emit((-1,-1,-1,-1))
                     pass
                     # print("MMWDEMO_UART_MSG_CLUSTERS")
                     # x, y, x_size, y_size = self.get_clusters_loction(tlv_payload)
@@ -190,9 +209,9 @@ class RadarMsgProcessThread(QThread):
                     # self.update.emit((x, y, x_size, y_size))
                 elif tlv_type == MMWDEMO_UART_MSG_TRACKED_OBJ:
                     x, y, dx, dy = self._get_trackers(tlv_payload)
-                    # msg_queue.put((x, y, x_size, y_size))
-                    # print((x, y, x_size, y_size))
-                    self.update.emit((x, y, dx, dy))
+                    radar_obj_msg_queue.append((x, y, dx, dy))
+                    #print((x, y, dx, dy))
+                    #self.update.emit((x, y, dx, dy))
 
                 else:
                     # print("other msg")
