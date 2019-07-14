@@ -1,5 +1,6 @@
 import cv2 as cv
 
+
 class Camera():
     def __init__(self,camera_id):
         self.camera_id = camera_id
@@ -85,6 +86,7 @@ class Camera():
 
     def annoate(self):
         pass
+
 
 
 if __name__ == '__main__':

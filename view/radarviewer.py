@@ -1,3 +1,4 @@
+import os
 import glob
 import sys
 from collections import deque
@@ -8,7 +9,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from PyQt5.QtCore import QRegExp, Qt, QTimer
-from PyQt5.QtGui import ( QImage, QIntValidator, QPixmap, QRegExpValidator)
+from PyQt5.QtGui import (QImage, QIntValidator, QPixmap, QRegExpValidator)
 from PyQt5.QtWidgets import (QApplication, QGridLayout, QMainWindow)
 from PyQt5.uic import loadUi
 
@@ -16,8 +17,8 @@ import about
 import camera_setting
 import radar
 import serial_setting
-from camera import Camera, CameraManager
-from processing import *
+from camera import (CameraManager, CameraThread)
+from processing import DetectorThread
 from radar import *
 
 matplotlib.use("Qt5Agg")  # 声明使用QT5
@@ -39,56 +40,49 @@ class QtFigure(FigureCanvas):
         self.axes = self.fig.gca()
 
 
-detector_input_queue = deque(maxlen=10)
-display_queue = deque(maxlen=10)
+class Monitor:
+    startx = -5
+    starty = 0
+    width = 10
+    deepth = 10
 
 
-class DetectorThread(QThread):
-    def __init__(self, parent):
-        super(DetectorThread, self).__init__(parent)
+class Axis:
+    radar_max_x_abs = 10
+    radar_max_y_abs = 80
 
-    def run(self):
-        while True:
-            if len(detector_input_queue) > 0:
-
-                frame = detector_input_queue.popleft()
-
-                frame1 = Image.fromarray(frame)
-                _, self.exist_person = self.detector.detect_image(frame1)
-                frame = np.asarray(frame1)
-
-                display_queue.append(frame)
-
-class ImageDisplayThread(QThread):
-    def __init__(self,parent, radar_viewer):
-        super(ImageDisplayThread, self).__init__(parent)
-        self.radar_viewer = radar_viewer
-
-    def run(self):
-        while True:
-            if len(display_queue) > 0:
-
-                frame = display_queue.popleft()
-
-                frame = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
-
-                image = QImage(frame.data, frame.shape[1], frame.shape[0], QImage.Format_RGB888)
-                pixmap = QPixmap.fromImage(image)
-
-                self.radar_viewer.label_video.setPixmap(pixmap)
-
+    def __init__(self):
+        self.radar_y_max = self.radar_max_y_abs
+        self.radar_y_min = 0
+        self.radar_x_max = self.radar_max_x_abs
+        self.radar_x_min = -self.radar_max_x_abs
 
 
 class Radar_Viewer(QMainWindow):
     def __init__(self, *args):
         super(Radar_Viewer, self).__init__(*args)
+        self.cam_manager = CameraManager()
+        self.uart_cfg = UartConfig("COM0")
 
         # load main ui
         self.radar_viewer = loadUi("./ui/radar_viewer.ui", self)
-        self.radar_viewer.tab_widget.setCurrentIndex(0)
+        self.init_menu()
+        self.init_main_page()
+        self.init_image_page()
 
-        self.init_manu_bar()
+        # initial threads and timers
+        self.init_threads()
+        self.init_timers()
+        # self.showFullScreen()
+        # self.showMaximized()
 
+    def init_menu(self):
+        # init menu
+        self.radar_viewer.actionCamera_Setting.triggered.connect(self.start_camera_setting_dialog)
+        self.radar_viewer.actionRadar_Setting.triggered.connect(self.start_serial_setting_dialog)
+        self.radar_viewer.actionAbout.triggered.connect(self.start_about_dialog)
+
+    def init_radar_axis_para(self):
         self.radar_max_x_abs = 10
         self.radar_max_y_abs = 80
         self.radar_y_max = self.radar_max_y_abs
@@ -101,56 +95,86 @@ class Radar_Viewer(QMainWindow):
         self.initial_width = 10
         self.initial_deepth = 10
 
-        self.load_radar_axis()
+    def draw_axis(self):
+        self.qtfig.axes.axis([self.radar_x_min, self.radar_x_max, self.radar_y_min, self.radar_y_max])
+        self.qtfig.axes.grid(color='deepskyblue', linestyle='dashed', linewidth=1, alpha=0.3)
+        self.qtfig.axes.spines['top'].set_visible(False)  # 去掉上边框
+        self.qtfig.axes.spines['right'].set_visible(False)  # 去掉右边框
+        self.qtfig.axes.spines['left'].set_position(('axes', 0.5))
+        self.qtfig.fig.tight_layout()
 
-        # init video
-        self.video_width = 1200
-        self.video_height = 540
-        self.detector = YOLO()
-        self.detector_enable = False
-        self.init_dectecor_session()
+    def draw_capture_area(self):
+        self.rect = plt.Rectangle((self.radar_startx, self.radar_starty), self.radar_capture_width,
+                                  self.radar_capture_deepth,
+                                  linewidth=1, edgecolor='r', facecolor='r')
+        self.rect.set_alpha(0.3)
+        self.qtfig.axes.add_patch(self.rect)
 
-        self.init_main_ui_setting()
+    def delete_capture_area(self):
+        [p.remove() for p in reversed(self.qtfig.axes.patches)]
+
+    def handle_radar_capture_area_setting(self):
+        self.cv_trigger_enable = False
+        self.radar_trigger_enable = False
+        self.obstacle_in_area = False
+
+        radar_startx = float(self.radar_viewer.lineEdit_radar_startx.text())
+        radar_starty = float(self.radar_viewer.lineEdit_radar_starty.text())
+        radar_capture_width = float(self.radar_viewer.lineEdit_radar_capture_width.text())
+        radar_capture_deepth = float(self.radar_viewer.lineEdit_radar_capture_deepth.text())
+
+        if (abs(radar_startx) < self.radar_max_x_abs or -radar_startx == self.radar_max_x_abs) \
+                and 0 <= radar_starty < self.radar_y_max \
+                and radar_startx + radar_capture_width <= self.radar_max_x_abs \
+                and radar_starty + radar_capture_deepth <= self.radar_y_max \
+                and radar_capture_width > 0 \
+                and radar_capture_deepth > 0:
+            self.radar_startx = radar_startx
+            self.radar_starty = radar_starty
+            self.radar_capture_width = radar_capture_width
+            self.radar_capture_deepth = radar_capture_deepth
+
+            self.delete_capture_area()
+            self.draw_capture_area()
+        else:
+            print("invalid area")
+
+    def load_radar_axis(self):
+        self.init_radar_axis_para()
+        self.qtfig = QtFigure(width=6, height=4, dpi=100)
+        self.gridlayout = QGridLayout(self.radar_viewer.groupBox_radar)
+        self.gridlayout.addWidget(self.qtfig)
+        self.draw_axis()
+        self.scatter_collection = None
+        self.texts = None
         self.handle_radar_capture_area_setting()
 
+    def set_cv_detector(self):
+        if self.radar_viewer.checkBox_detector_switch.checkState() == Qt.Checked:
+            self.detector_enable = True
+            self.detector_thread.set_enable(True)
 
-        self.img_queue = deque()
-        self.current_image_index = -1
-        self.init_img_queue()
+        elif self.radar_viewer.checkBox_detector_switch.checkState() == Qt.Unchecked:
+            self.detector_enable = False
+            self.detector_thread.set_enable(False)
 
-        self.com = None
-        self.radar_receive_thread = None
+    def set_cv_trigger(self):
+        if self.radar_viewer.checkBox_cv_trigger.checkState() == Qt.Checked:
+            self.cv_trigger_enable = True
+        elif self.radar_viewer.checkBox_cv_trigger.checkState() == Qt.Unchecked:
+            self.cv_trigger_enable = False
 
-        self.radar_viewer.pushButton_pre.clicked.connect(self.pre_image)
-        self.radar_viewer.pushButton_next.clicked.connect(self.next_image)
-
-        self.init_timers()
-
-        self.frame_update_timer.start((int)(1000.0 / self.cam_manager.framerate))
-        self.detector_thread = DetectorThread(self)
-        self.detector_thread.start()
-
-        self.display_thread = ImageDisplayThread(self, self.radar_viewer)
-        self.display_thread.start()
-
-        # self.showFullScreen()
-        # self.showMaximized()
-
-    def init_dectecor_session(self):
-        frame = np.zeros((32,32,3)).astype('uint8')
-        frame1 = Image.fromarray(frame)
-        _, _ = self.detector.detect_image(frame1)
-
-    def init_manu_bar(self):
-        # init menu
-        self.cam_manager = CameraManager()
-        self.radar_viewer.actionCamera_Setting.triggered.connect(self.start_camera_setting_dialog)
-
-        self.uart_cfg = UartConfig("COM0")
-        self.radar_viewer.actionRadar_Setting.triggered.connect(self.start_serial_setting_dialog)
-        self.radar_viewer.actionAbout.triggered.connect(self.start_about_dialog)
+    def set_radar_trigger(self):
+        if self.radar_viewer.checkBox_radar_trigger.checkState() == Qt.Checked:
+            self.radar_trigger_enable = True
+        elif self.radar_viewer.checkBox_radar_trigger.checkState() == Qt.Unchecked:
+            self.radar_trigger_enable = False
 
     def init_main_ui_setting(self):
+        self.detector_enable = False
+        self.set_cv_trigger()
+        self.set_radar_trigger()
+
         # init setting
         self.radar_viewer.checkBox_detector_switch.stateChanged.connect(self.set_cv_detector)
         self.radar_viewer.checkBox_cv_trigger.stateChanged.connect(self.set_cv_trigger)
@@ -178,11 +202,6 @@ class Radar_Viewer(QMainWindow):
         self.radar_viewer.lineEdit_radar_capture_width.returnPressed.connect(self.handle_radar_capture_area_setting)
         self.radar_viewer.lineEdit_radar_capture_deepth.returnPressed.connect(self.handle_radar_capture_area_setting)
 
-        # int_validato = QIntValidator(1, 999999, self)
-        # self.radar_viewer.lineEdit_image_capture_period.setValidator(int_validato)  # 设置验证
-        # self.radar_viewer.lineEdit_image_capture_period.move(50, 90)
-        # self.radar_viewer.lineEdit_image_capture_period.returnPressed.connect(self.set_image_capture_period)
-
         self.radar_viewer.horizontalSlider_video_brightness.setRange(0, 200)
         self.radar_viewer.horizontalSlider_video_contrast.setRange(0, 100)
         self.radar_viewer.horizontalSlider_video_brightness.setValue(self.cam_manager.brightness)
@@ -190,141 +209,42 @@ class Radar_Viewer(QMainWindow):
         self.radar_viewer.horizontalSlider_video_brightness.valueChanged.connect(self.set_video_brightness)
         self.radar_viewer.horizontalSlider_video_contrast.valueChanged.connect(self.set_video_contrast)
 
-        self.cv_trigger_enable = False
-        self.radar_trigger_enable = False
-        self.obstacle_in_area = False
+    def init_main_page(self):
+        self.radar_viewer.tab_widget.setCurrentIndex(0)
+        self.load_radar_axis()
+        self.init_main_ui_setting()
 
-    def load_radar_axis(self):
-        self.qtfig = QtFigure(width=6, height=4, dpi=100)
-        self.gridlayout = QGridLayout(self.radar_viewer.groupBox_radar)
-        self.gridlayout.addWidget(self.qtfig)
-        self.draw_axis()
-        self.scatter_collection = None
-        self.texts = None
+    def init_image_page(self):
+        self.img_queue = deque()
+        self.current_image_index = -1
+        imgs_list = glob.glob(IMG_PATH + "/*.jpg")
+        imgs_list.sort(key=lambda f: os.path.getctime(f))
+        self.img_queue.clear()
+        self.img_queue.extend(imgs_list)
+        self.show_image(self.current_image_index)
+        self.radar_viewer.pushButton_pre.clicked.connect(self.pre_image)
+        self.radar_viewer.pushButton_next.clicked.connect(self.next_image)
 
-    def set_video_brightness(self):
-        self.cam_manager.brightness = self.radar_viewer.horizontalSlider_video_brightness.value()
-        self.cam_manager.cam.set_brightness(self.cam_manager.brightness)
+    def init_threads(self):
+        self.camera_image_queue = deque(maxlen=10)
+        self.detector_output_queue = deque(maxlen=10)
+        self.detector_thread = DetectorThread(self,  self.camera_image_queue, self.detector_output_queue, False)
+        self.detector_thread.start()
 
+        self.camera_thread = CameraThread(self, self.cam_manager.cam, self.camera_image_queue)
+        self.camera_thread.start()
 
-    def set_video_contrast(self):
-        self.cam_manager.contrast = self.radar_viewer.horizontalSlider_video_contrast.value()
-        self.cam_manager.cam.set_contrast(self.cam_manager.contrast)
-
+        self.com = None
+        self.radar_receive_thread = None
 
     def init_timers(self):
         self.frame_update_timer = QTimer(self)
-        self.frame_update_timer.timeout.connect(self.update_video)
+        self.frame_update_timer.timeout.connect(self.display_image)
         self.frame_update_timer.start((int)(1000.0 / self.cam_manager.framerate))
 
         self.radar_update_timer = QTimer(self)
         self.radar_update_timer.timeout.connect(self.update_radar_from_obj_queue)
-
-
-    # def set_image_capture_period(self):
-    #     print(self.radar_viewer.lineEdit_image_capture_period.text())
-
-    def handle_radar_capture_area_setting(self):
-        radar_startx = float(self.radar_viewer.lineEdit_radar_startx.text())
-        radar_starty = float(self.radar_viewer.lineEdit_radar_starty.text())
-        radar_capture_width = float(self.radar_viewer.lineEdit_radar_capture_width.text())
-        radar_capture_deepth = float(self.radar_viewer.lineEdit_radar_capture_deepth.text())
-
-        if (abs(radar_startx) < self.radar_max_x_abs or -radar_startx == self.radar_max_x_abs) \
-                and 0 <= radar_starty < self.radar_y_max \
-                and radar_startx + radar_capture_width <= self.radar_max_x_abs \
-                and radar_starty + radar_capture_deepth <= self.radar_y_max \
-                and radar_capture_width > 0 \
-                and radar_capture_deepth > 0:
-            self.radar_startx = radar_startx
-            self.radar_starty = radar_starty
-            self.radar_capture_width = radar_capture_width
-            self.radar_capture_deepth = radar_capture_deepth
-
-            self.delete_capture_area()
-            self.draw_capture_area()
-        else:
-            print("invalid area")
-
-    def draw_axis(self):
-        self.qtfig.axes.axis([self.radar_x_min, self.radar_x_max, self.radar_y_min, self.radar_y_max])
-        self.qtfig.axes.grid(color='deepskyblue', linestyle='dashed', linewidth=1, alpha=0.3)
-        self.qtfig.axes.spines['top'].set_visible(False)  # 去掉上边框
-        self.qtfig.axes.spines['right'].set_visible(False)  # 去掉右边框
-        self.qtfig.axes.spines['left'].set_position(('axes', 0.5))
-        self.qtfig.fig.tight_layout()
-
-    def draw_capture_area(self):
-        self.rect = plt.Rectangle((self.radar_startx, self.radar_starty), self.radar_capture_width,
-                                  self.radar_capture_deepth,
-                                  linewidth=1, edgecolor='r', facecolor='r')
-        self.rect.set_alpha(0.3)
-        self.qtfig.axes.add_patch(self.rect)
-
-    def delete_capture_area(self):
-        [p.remove() for p in reversed(self.qtfig.axes.patches)]
-
-    def plot_scatter(self, x, y):
-        #[text.remove() for text in reversed(self.qtfig.axes.texts)]
-        try:
-            self.clear_scatter()
-
-            self.scatter_collection = self.qtfig.axes.scatter(x, y, c='red')
-        except Exception as e:
-            print("scatter err")
-            print(e)
-
-        # for x1, y1 in zip(x, y):
-        #     self.qtfig.axes.text(x1, y1, '({},{})'.format(round(x1, 1), round(y1, 1)))
-
-    def clear_scatter(self):
-        if self.scatter_collection:
-            self.scatter_collection.remove()
-            self.qtfig.fig.canvas.draw_idle()
-            del self.scatter_collection
-            self.scatter_collection = None
-
-    def update_radar(self, *args):
-        #print(args)
-        x, y, x_size, y_size = args[0]
-        #plt.clf()
-        self.plot_scatter(x, y)
-
-        for x1, y1 in zip(x, y):
-            if self.radar_startx <= x1 <= self.radar_startx + self.radar_capture_width \
-                    and self.radar_starty <= y1 <= self.radar_starty + self.radar_capture_deepth:
-                self.obstacle_in_area = True
-                return
-
-    def update_radar_from_obj_queue(self):
-        radar_update_start_time = time.time()
-        #print('radar update time:',radar_update_start_time)
-        try:
-            print("radar obj msg queue:", len(radar.radar_obj_msg_queue))
-            if len(radar.radar_obj_msg_queue) == 0:
-                self.clear_scatter()
-                return
-
-
-            x, y, x_size, y_size = radar.radar_obj_msg_queue.popleft()
-            self.plot_scatter(x, y)
-
-            for x1, y1 in zip(x, y):
-                if self.radar_startx <= x1 <= self.radar_startx + self.radar_capture_width \
-                        and self.radar_starty <= y1 <= self.radar_starty + self.radar_capture_deepth:
-                    self.obstacle_in_area = True
-                    return
-
-        except IndexError as e:
-            print('queue is empty')
-            self.clear_scatter()
-            print(e)
-        except Exception as e:
-            print('other err')
-            print(e)
-
-        finally:
-            print('radar update cost time:',time.time() - radar_update_start_time)
+        #self.radar_update_timer.start(30)
 
     def start_camera_setting_dialog(self):
         self.camera_setting_dialog = camera_setting.CameraSettingDialog(self.cam_manager)
@@ -370,80 +290,157 @@ class Radar_Viewer(QMainWindow):
         self.radar_msg_process_thread = radar.RadarMsgProcessThread(self)
         self.radar_msg_process_thread.update.connect(self.update_radar)
         self.radar_msg_process_thread.start()
-        #self.radar_receive_thread.update.connect(self.update_radar)
+        # self.radar_receive_thread.update.connect(self.update_radar)
         self.radar_receive_thread.start()
         self.radar_update_timer.start(60)
 
-    def update_video(self):
-        ret, frame = self.cam_manager.cam.take_photo()
-        if ret == True:
-            # gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
-            # 找到棋盘格角点
-            # ret, corners = cv.findChessboardCorners(gray, (CHESSBOARD_W_NUM, CHESSBOARD_H_NUM), None)
-            # if ret == True:
-            #     cv.cornerSubPix(gray, corners, (11, 11), (-1, -1), CRITERIA)
-            #     cv.drawChessboardCorners(frame, (w, h), corners, ret)
+    def set_video_brightness(self):
+        self.cam_manager.brightness = self.radar_viewer.horizontalSlider_video_brightness.value()
+        self.cam_manager.cam.set_brightness(self.cam_manager.brightness)
 
-            #imagePoints = cv.projectPoints(objectPoints, rvec, tvec, mtx, dist)
+    def set_video_contrast(self):
+        self.cam_manager.contrast = self.radar_viewer.horizontalSlider_video_contrast.value()
+        self.cam_manager.cam.set_contrast(self.cam_manager.contrast)
 
-            self.exist_person = False
+
+
+    def clear_scatter(self):
+        if self.scatter_collection:
+            self.scatter_collection.remove()
+            self.qtfig.fig.canvas.draw_idle()
+            del self.scatter_collection
+            self.scatter_collection = None
+
+    def plot_scatter(self, x, y):
+        # [text.remove() for text in reversed(self.qtfig.axes.texts)]
+        try:
+            self.clear_scatter()
+
+            self.scatter_collection = self.qtfig.axes.scatter(x, y, c='red')
+        except Exception as e:
+            print("scatter err")
+            print(e)
+
+        # for x1, y1 in zip(x, y):
+        #     self.qtfig.axes.text(x1, y1, '({},{})'.format(round(x1, 1), round(y1, 1)))
+
+    # def update_radar(self, *args):
+    #     #print(args)
+    #     x, y, x_size, y_size = args[0]
+    #     #plt.clf()
+    #     self.plot_scatter(x, y)
+    #
+    #     for x1, y1 in zip(x, y):
+    #         if self.radar_startx <= x1 <= self.radar_startx + self.radar_capture_width \
+    #                 and self.radar_starty <= y1 <= self.radar_starty + self.radar_capture_deepth:
+    #             self.obstacle_in_area = True
+    #             return
+
+    def update_radar_from_obj_queue(self):
+        radar_update_start_time = time.time()
+        # print('radar update time:',radar_update_start_time)
+        try:
+            print("radar obj msg queue:", len(radar.radar_obj_msg_queue))
+            if len(radar.radar_obj_msg_queue) == 0:
+                self.clear_scatter()
+                return
+
+            x, y, x_size, y_size = radar.radar_obj_msg_queue.popleft()
+            self.plot_scatter(x, y)
+
+            for x1, y1 in zip(x, y):
+                if self.radar_startx <= x1 <= self.radar_startx + self.radar_capture_width \
+                        and self.radar_starty <= y1 <= self.radar_starty + self.radar_capture_deepth:
+                    self.obstacle_in_area = True
+                    return
+
+        except IndexError as e:
+            print('queue is empty')
+            self.clear_scatter()
+            print(e)
+        except Exception as e:
+            print('other err')
+            print(e)
+
+        finally:
+            print('radar update cost time:', time.time() - radar_update_start_time)
+
+    def display_image(self):
+        try:
+            start_time = time.time()
+            frame = None
             if self.detector_enable:
-                detector_input_queue.append(frame)
-                # start = time.time()
-                # frame1 = Image.fromarray(frame)
-                # _, self.exist_person = self.detector.detect_image(frame1)
-                # frame = np.asarray(frame1)
-                # stop = time.time()
-                # print("detector processing time:",stop - start)
-                # self.frame_update_timer.stop()
+                print('detector output queue len:',len(self.detector_output_queue))
+                if len(self.detector_output_queue) > 0:
+                    frame = self.detector_output_queue.popleft()
+                else:
+                    return
+            else:
+                print('camera image queue len:',len(self.camera_image_queue))
+                if len(self.camera_image_queue) > 0:
+                    frame = self.camera_image_queue.popleft()
+                else:
+                    return
 
+            frame = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
+            image = QImage(frame.data, frame.shape[1], frame.shape[0], QImage.Format_RGB888)
+            pixmap = QPixmap.fromImage(image)
+            self.radar_viewer.label_video.setPixmap(pixmap)
+            print("display time cost:",time.time() - start_time)
+        except Exception as e:
+            print(e)
 
-            #point = np.array(imagePoints[0][0, 0, :]).astype(int)
-            #cv.circle(frame, tuple(point), 2, (0, 0, 255), 4)
-
-            #cv.rectangle(frame, tuple(point - 20), tuple(point + 20), (0, 255, 0), 3)
-            #cv.putText(frame, "({},{}),1.2m/s".format(objectPoints[0, 0] / 1000, objectPoints[0, 2] / 1000),
-            #           (point[0] - 20, point[1] - 25), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
-
-            # self.frame = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
-            # # print(type(self.frame))
-            # stored_flag = False
-            # if self.cv_trigger_enable:
-            #     if self.exist_person:
-            #         self.save_img(self.frame)
-            #         stored_flag = True
-            #
-            # if self.radar_trigger_enable and not stored_flag:
-            #     if self.obstacle_in_area:
-            #         self.obstacle_in_area = False
-            #         self.save_img(self.frame)
-            #
-            # self.image = QImage(self.frame.data, self.frame.shape[1], self.frame.shape[0], QImage.Format_RGB888)
-            # self.pixmap = QPixmap.fromImage(self.image)
-            # # self.scaled_pixmap = self.pixmap.scaled(
-            # #     self.video_width, self.video_height, aspectRatioMode=Qt.KeepAspectRatioByExpanding,
-            # #     transformMode=Qt.SmoothTransformation)
-            # self.radar_viewer.label_video.setPixmap(self.pixmap)
-
-    def set_cv_detector(self):
-        self.frame_update_timer.stop()
-        if self.radar_viewer.checkBox_detector_switch.checkState() == Qt.Checked:
-            self.detector_enable = True
-        elif self.radar_viewer.checkBox_detector_switch.checkState() == Qt.Unchecked:
-            self.detector_enable = False
-        self.frame_update_timer.start()
-
-    def set_cv_trigger(self):
-        if self.radar_viewer.checkBox_cv_trigger.checkState() == Qt.Checked:
-            self.cv_trigger_enable = True
-        elif self.radar_viewer.checkBox_cv_trigger.checkState() == Qt.Unchecked:
-            self.cv_trigger_enable = False
-
-    def set_radar_trigger(self):
-        if self.radar_viewer.checkBox_radar_trigger.checkState() == Qt.Checked:
-            self.radar_trigger_enable = True
-        elif self.radar_viewer.checkBox_radar_trigger.checkState() == Qt.Unchecked:
-            self.radar_trigger_enable = False
+        # ret, frame = self.cam_manager.cam.take_photo()
+        # if ret == True:
+        #     # gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
+        #         #     # 找到棋盘格角点
+        #     # ret, corners = cv.findChessboardCorners(gray, (CHESSBOARD_W_NUM, CHESSBOARD_H_NUM), None)
+        #     # if ret == True:
+        #     #     cv.cornerSubPix(gray, corners, (11, 11), (-1, -1), CRITERIA)
+        #     #     cv.drawChessboardCorners(frame, (w, h), corners, ret)
+        #
+        #     #imagePoints = cv.projectPoints(objectPoints, rvec, tvec, mtx, dist)
+        #
+        #     self.exist_person = False
+        #     if self.detector_enable:
+        #         detector_input_queue.append(frame)
+        #         frame = detector_input_queue.popleft()
+        #         # start = time.time()
+        #         # frame1 = Image.fromarray(frame)
+        #         # _, self.exist_person = self.detector.detect_image(frame1)
+        #         # frame = np.asarray(frame1)
+        #         # stop = time.time()
+        #         # print("detector processing time:",stop - start)
+        #         # self.frame_update_timer.stop()
+        #
+        #     display_queue.append(frame)
+        #
+        #     #point = np.array(imagePoints[0][0, 0, :]).astype(int)
+        #     #cv.circle(frame, tuple(point), 2, (0, 0, 255), 4)
+        #
+        #     #cv.rectangle(frame, tuple(point - 20), tuple(point + 20), (0, 255, 0), 3)
+        #     #cv.putText(frame, "({},{}),1.2m/s".format(objectPoints[0, 0] / 1000, objectPoints[0, 2] / 1000),
+        #     #           (point[0] - 20, point[1] - 25), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
+        #
+        #     # self.frame = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
+        #     # # print(type(self.frame))
+        #     # stored_flag = False
+        #     # if self.cv_trigger_enable:
+        #     #     if self.exist_person:
+        #     #         self.save_img(self.frame)
+        #     #         stored_flag = True
+        #     #
+        #     # if self.radar_trigger_enable and not stored_flag:
+        #     #     if self.obstacle_in_area:
+        #     #         self.obstacle_in_area = False
+        #     #         self.save_img(self.frame)
+        #     #
+        #     # self.image = QImage(self.frame.data, self.frame.shape[1], self.frame.shape[0], QImage.Format_RGB888)
+        #     # self.pixmap = QPixmap.fromImage(self.image)
+        #     # # self.scaled_pixmap = self.pixmap.scaled(
+        #     # #     self.video_width, self.video_height, aspectRatioMode=Qt.KeepAspectRatioByExpanding,
+        #     # #     transformMode=Qt.SmoothTransformation)
+        #     # self.radar_viewer.label_video.setPixmap(self.pixmap)
 
     # def set_save_picture_auto(self):
     #     if self.radar_viewer.checkBox_save_picture_auto.checkState() == Qt.Checked:
@@ -451,16 +448,20 @@ class Radar_Viewer(QMainWindow):
     #     elif self.radar_viewer.checkBox_save_picture_auto.checkState() == Qt.Unchecked:
     #         self.save_picture_auto = False
 
-    def resizeEvent(self, event):
-        # print("resize event")
-        pass
+    # def resizeEvent(self, event):
+    #     # print("resize event")
+    #     pass
+    def pre_image(self):
+        if len(self.img_queue):
+            self.current_image_index = -1 if self.current_image_index + 1 < -len(
+                self.img_queue) else self.current_image_index - 1
+            self.show_image(self.current_image_index)
 
-    def init_img_queue(self):
-        imgs_list = glob.glob(IMG_PATH + "/*.jpg")
-        imgs_list.sort(key=lambda f: os.path.getctime(f))
-        self.img_queue.clear()
-        self.img_queue.extend(imgs_list)
-        self.show_image(self.current_image_index)
+    def next_image(self):
+        if len(self.img_queue):
+            self.current_image_index = -len(
+                self.img_queue) if self.current_image_index + 1 > -1 else self.current_image_index + 1
+            self.show_image(self.current_image_index)
 
     def save_img(self, img):
         filename = time.ctime().replace(":", " ")
@@ -482,18 +483,6 @@ class Radar_Viewer(QMainWindow):
                 self.radar_viewer.label_photo.setPixmap(scaled_pixmap)
         except Exception as e:
             print(e)
-
-    def pre_image(self):
-        if len(self.img_queue):
-            self.current_image_index = -1 if self.current_image_index + 1 < -len(
-                self.img_queue) else self.current_image_index - 1
-            self.show_image(self.current_image_index)
-
-    def next_image(self):
-        if len(self.img_queue):
-            self.current_image_index = -len(
-                self.img_queue) if self.current_image_index + 1 > -1 else self.current_image_index + 1
-            self.show_image(self.current_image_index)
 
 
 if __name__ == '__main__':
