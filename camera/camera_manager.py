@@ -48,7 +48,7 @@ class CameraManager(CameraCfg):
         self.cam.set_gain(self.gain)
 
     def get_camera_instance(self,id):
-        if isinstance(self.cam, camera.Camera) and self.id == id:
+        if isinstance(self.cam, camera.Camera):
             self.cam.close()
             #return self.cam
 

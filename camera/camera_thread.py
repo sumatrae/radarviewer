@@ -11,22 +11,31 @@ class CameraThread(QThread):
         else:
             self.frame = 30
 
-    def __del__(self):
-        self.cam.close()
+        self.count = 0
 
-    def set_com(self, cam):
-        self.cam = cam
+    def __del__(self):
+        print("CameraThread exit")
+
+    def set_cam(self, cam):
+            self.cam = cam
 
     def run(self):
-        while True:
-            try:
-                if  self.cam == None:
-                    continue
+        try:
+            while self.cam.is_opened():
+                try:
+                    ret, frame = self.cam.take_photo()
+                    if ret == True:
+                        # self.count += 1
+                        # if self.count % 2 == 0:
+                        #     continue
 
-                ret, frame = self.cam.take_photo()
-                if ret == True:
-                    self.camera_image_queue.append(frame)
-                else:
-                    time.sleep(1.0/self.frame)
-            except Exception as e:
-                print(e)
+                        self.camera_image_queue.append(frame)
+                    else:
+                        time.sleep(1.0/self.frame)
+                except Exception as e:
+                    print('take photo err')
+                    print(e)
+            print("CameraThread normal exit")
+        except Exception as e:
+            print('CameraThread exit')
+            print(e)

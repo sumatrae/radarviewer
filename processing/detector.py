@@ -6,15 +6,21 @@ from PIL import Image
 
 
 class DetectorThread(QThread):
+    yolo_initial_finished = pyqtSignal(bool)
     def __init__(self, parent, input_queue, output_queue, enable):
         super(DetectorThread, self).__init__(parent)
+
+        print("DetectorThread started")
 
         self.input_queue = input_queue
         self.output_queue = output_queue
         self.enable = enable
 
     def __del__(self):
+        self.yolo_initial_finished.emit(False)
         del self.detector
+
+        print('DetectorThread exit')
 
     def _try_dectecor_session(self):
         '''第一次调用yolo时很慢，防止界面卡顿，在启动时先调用一次'''
@@ -29,6 +35,8 @@ class DetectorThread(QThread):
         try:
             self.detector = YOLO()
             self._try_dectecor_session()
+            self.yolo_initial_finished.emit(True)
+            print('Yolo init finished')
 
             while True:
                 if not self.enable:

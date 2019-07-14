@@ -175,6 +175,9 @@ class Radar_Viewer(QMainWindow):
         self.set_cv_trigger()
         self.set_radar_trigger()
 
+        self.radar_viewer.checkBox_detector_switch.setEnabled(False)
+
+
         # init setting
         self.radar_viewer.checkBox_detector_switch.stateChanged.connect(self.set_cv_detector)
         self.radar_viewer.checkBox_cv_trigger.stateChanged.connect(self.set_cv_trigger)
@@ -226,10 +229,12 @@ class Radar_Viewer(QMainWindow):
         self.radar_viewer.pushButton_next.clicked.connect(self.next_image)
 
     def init_threads(self):
-        self.camera_image_queue = deque(maxlen=10)
-        self.detector_output_queue = deque(maxlen=10)
+        self.camera_image_queue = deque(maxlen=6)
+        self.detector_output_queue = deque(maxlen=3)
         self.detector_thread = DetectorThread(self,  self.camera_image_queue, self.detector_output_queue, False)
         self.detector_thread.start()
+
+        self.radar_viewer.detector_thread.yolo_initial_finished.connect(self.set_detector_enable)
 
         self.camera_thread = CameraThread(self, self.cam_manager.cam, self.camera_image_queue)
         self.camera_thread.start()
@@ -240,7 +245,7 @@ class Radar_Viewer(QMainWindow):
     def init_timers(self):
         self.frame_update_timer = QTimer(self)
         self.frame_update_timer.timeout.connect(self.display_image)
-        self.frame_update_timer.start((int)(1000.0 / self.cam_manager.framerate))
+        self.frame_update_timer.start(6)
 
         self.radar_update_timer = QTimer(self)
         self.radar_update_timer.timeout.connect(self.update_radar_from_obj_queue)
@@ -282,17 +287,26 @@ class Radar_Viewer(QMainWindow):
         self.radar_viewer.horizontalSlider_video_brightness.setValue(self.cam_manager.brightness)
         self.radar_viewer.horizontalSlider_video_contrast.setValue(self.cam_manager.contrast)
 
+        self.frame_update_timer.start()
+
+        self.camera_thread.set_cam(self.radar_viewer.cam_manager.cam)
+        self.camera_thread.start()
+
     def update_uart_info(self, uart_config_msg):
-        self.radar_update_timer.stop()
+        #self.radar_update_timer.stop()
         self.uart_cfg = uart_config_msg
         self.com = UartManager.create_instance(self.uart_cfg)
+
         self.radar_receive_thread = radar.RadarReceiveThread(self, self.com)
         self.radar_msg_process_thread = radar.RadarMsgProcessThread(self)
-        self.radar_msg_process_thread.update.connect(self.update_radar)
-        self.radar_msg_process_thread.start()
-        # self.radar_receive_thread.update.connect(self.update_radar)
+
         self.radar_receive_thread.start()
-        self.radar_update_timer.start(60)
+        self.radar_msg_process_thread.start()
+
+
+        #self.radar_update_timer.start(60)
+
+
 
     def set_video_brightness(self):
         self.cam_manager.brightness = self.radar_viewer.horizontalSlider_video_brightness.value()
@@ -302,6 +316,12 @@ class Radar_Viewer(QMainWindow):
         self.cam_manager.contrast = self.radar_viewer.horizontalSlider_video_contrast.value()
         self.cam_manager.cam.set_contrast(self.cam_manager.contrast)
 
+    def set_detector_enable(self, *args):
+        detector_finished_flag = args[0]
+        if detector_finished_flag == True:
+            self.radar_viewer.checkBox_detector_switch.setEnabled(True)
+        else:
+            self.radar_viewer.checkBox_detector_switch.setEnabled(False)
 
 
     def clear_scatter(self):
@@ -366,6 +386,8 @@ class Radar_Viewer(QMainWindow):
             print('radar update cost time:', time.time() - radar_update_start_time)
 
     def display_image(self):
+        start_time = time.time()
+        self.update_radar_from_obj_queue()
         try:
             start_time = time.time()
             frame = None
@@ -390,6 +412,7 @@ class Radar_Viewer(QMainWindow):
         except Exception as e:
             print(e)
 
+        print('display cost time:', time.time() - start_time)
         # ret, frame = self.cam_manager.cam.take_photo()
         # if ret == True:
         #     # gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
