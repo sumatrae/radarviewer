@@ -18,7 +18,7 @@ import camera_setting
 import radar
 import serial_setting
 from camera import (CameraManager, CameraThread)
-from processing import DetectorThread
+from processing import (DetectorThread,DetectorProcess)
 from radar import *
 
 matplotlib.use("Qt5Agg")  # 声明使用QT5
@@ -234,7 +234,11 @@ class Radar_Viewer(QMainWindow):
         self.detector_thread = DetectorThread(self,  self.camera_image_queue, self.detector_output_queue, False)
         self.detector_thread.start()
 
-        self.radar_viewer.detector_thread.yolo_initial_finished.connect(self.set_detector_enable)
+        self.detector_thread.yolo_initial_finished.connect(self.set_detector_enable)
+
+        #self.detector_process = DetectorProcess(self.camera_image_queue, self.detector_output_queue, False)
+        #self.detector_process.start()
+        #self.detector_process.yolo_initial_finished.connect(self.set_detector_enable)
 
         self.camera_thread = CameraThread(self, self.cam_manager.cam, self.camera_image_queue)
         self.camera_thread.start()
@@ -245,7 +249,7 @@ class Radar_Viewer(QMainWindow):
     def init_timers(self):
         self.frame_update_timer = QTimer(self)
         self.frame_update_timer.timeout.connect(self.display_image)
-        self.frame_update_timer.start(6)
+        self.frame_update_timer.start(60)
 
         self.radar_update_timer = QTimer(self)
         self.radar_update_timer.timeout.connect(self.update_radar_from_obj_queue)
@@ -360,7 +364,7 @@ class Radar_Viewer(QMainWindow):
         radar_update_start_time = time.time()
         # print('radar update time:',radar_update_start_time)
         try:
-            print("radar obj msg queue:", len(radar.radar_obj_msg_queue))
+           # print("radar obj msg queue:", len(radar.radar_obj_msg_queue))
             if len(radar.radar_obj_msg_queue) == 0:
                 self.clear_scatter()
                 return
@@ -375,44 +379,46 @@ class Radar_Viewer(QMainWindow):
                     return
 
         except IndexError as e:
-            print('queue is empty')
+            #print('queue is empty')
             self.clear_scatter()
-            print(e)
+            #print(e)
         except Exception as e:
-            print('other err')
+            #print('other err')
             print(e)
 
         finally:
-            print('radar update cost time:', time.time() - radar_update_start_time)
+            pass
+            #print('radar update cost time:', time.time() - radar_update_start_time)
 
     def display_image(self):
         start_time = time.time()
         self.update_radar_from_obj_queue()
         try:
             start_time = time.time()
-            frame = None
+            pixmap = None
             if self.detector_enable:
                 print('detector output queue len:',len(self.detector_output_queue))
                 if len(self.detector_output_queue) > 0:
-                    frame = self.detector_output_queue.popleft()
+                    pixmap = self.detector_output_queue.popleft()
                 else:
                     return
             else:
-                print('camera image queue len:',len(self.camera_image_queue))
+                #print('camera image queue len:',len(self.camera_image_queue))
                 if len(self.camera_image_queue) > 0:
                     frame = self.camera_image_queue.popleft()
+                    #frame = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
+                    image = QImage(frame.data, frame.shape[1], frame.shape[0], QImage.Format_RGB888)
+                    pixmap = QPixmap.fromImage(image)
                 else:
                     return
 
-            frame = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
-            image = QImage(frame.data, frame.shape[1], frame.shape[0], QImage.Format_RGB888)
-            pixmap = QPixmap.fromImage(image)
+
             self.radar_viewer.label_video.setPixmap(pixmap)
-            print("display time cost:",time.time() - start_time)
+            #print("display time cost:",time.time() - start_time)
         except Exception as e:
             print(e)
 
-        print('display cost time:', time.time() - start_time)
+        #print('display cost time:', time.time() - start_time)
         # ret, frame = self.cam_manager.cam.take_photo()
         # if ret == True:
         #     # gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)

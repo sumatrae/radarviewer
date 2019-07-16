@@ -1,5 +1,5 @@
 import cv2 as cv
-
+import time
 
 class Camera():
     def __init__(self,camera_id):
@@ -80,7 +80,9 @@ class Camera():
         pass
 
     def take_photo(self):
+        start_time = time.time()
         ret, frame = self.cap_fd.read()
+        print('get frame cost:',time.time() - start_time)
         #cv.waitKey(self.interval)
         return ret,frame
 
