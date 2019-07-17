@@ -25,18 +25,19 @@ class CameraThread(QThread):
                 try:
                     start_time = time.time()
                     ret, frame = self.cam.take_photo()
+                    print('Photo cost:', time.time() - start_time)
                     if ret == True:
                         # self.count += 1
                         # if self.count % 2 == 0:
                         #     continue
 
                         self.camera_image_queue.append(frame)
-                        print('Take photo time cost:', time.time() - start_time)
+
                     else:
                         print('no frame')
                     # else:
                     #     pass
-                        #time.sleep(1.0/self.frame)
+                        time.sleep(0.03)
                 except Exception as e:
                     print('take photo err')
                     print(e)

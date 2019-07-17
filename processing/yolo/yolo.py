@@ -121,6 +121,7 @@ class YOLO(object):
         image_data /= 255.
         image_data = np.expand_dims(image_data, 0)  # Add batch dimension.
 
+        sess_start_time = timer()
         out_boxes, out_scores, out_classes = self.sess.run(
             [self.boxes, self.scores, self.classes],
             feed_dict={
@@ -128,6 +129,7 @@ class YOLO(object):
                 self.input_image_shape: [image.size[1], image.size[0]],
                 K.learning_phase(): 0
             })
+        print('session time cost:', timer() - sess_start_time)
 
         #print('Found {} boxes for {}'.format(len(out_boxes), 'img'))
 

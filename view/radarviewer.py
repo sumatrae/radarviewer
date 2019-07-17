@@ -231,7 +231,8 @@ class Radar_Viewer(QMainWindow):
     def init_threads(self):
         self.camera_image_queue = deque(maxlen=6)
         self.detector_output_queue = deque(maxlen=3)
-        self.detector_thread = DetectorThread(self,  self.camera_image_queue, self.detector_output_queue, False)
+        self.detector_thread = DetectorThread(self,  self.camera_image_queue, self.detector_output_queue,
+                                              self.radar_viewer.label_video, False)
         self.detector_thread.start()
 
         self.detector_thread.yolo_initial_finished.connect(self.set_detector_enable)
@@ -248,11 +249,11 @@ class Radar_Viewer(QMainWindow):
 
     def init_timers(self):
         self.frame_update_timer = QTimer(self)
-        self.frame_update_timer.timeout.connect(self.display_image)
-        self.frame_update_timer.start(60)
+        #self.frame_update_timer.timeout.connect(self.display_image)
+        #self.frame_update_timer.start(60)
 
         self.radar_update_timer = QTimer(self)
-        self.radar_update_timer.timeout.connect(self.update_radar_from_obj_queue)
+        #self.radar_update_timer.timeout.connect(self.update_radar_from_obj_queue)
         #self.radar_update_timer.start(30)
 
     def start_camera_setting_dialog(self):
@@ -278,7 +279,7 @@ class Radar_Viewer(QMainWindow):
         self.about_dialog.show()
 
     def update_camera_info(self, camera_config_msg):
-        self.frame_update_timer.stop()
+        #self.frame_update_timer.stop()
 
         self.cam_manager.framerate = camera_config_msg.framerate
         self.cam_manager.resolution[0] = camera_config_msg.resolution[0]
@@ -291,7 +292,7 @@ class Radar_Viewer(QMainWindow):
         self.radar_viewer.horizontalSlider_video_brightness.setValue(self.cam_manager.brightness)
         self.radar_viewer.horizontalSlider_video_contrast.setValue(self.cam_manager.contrast)
 
-        self.frame_update_timer.start()
+        #self.frame_update_timer.start()
 
         self.camera_thread.set_cam(self.radar_viewer.cam_manager.cam)
         self.camera_thread.start()

@@ -2,6 +2,7 @@ import cv2 as cv
 import time
 
 class Camera():
+    count = 0
     def __init__(self,camera_id):
         self.camera_id = camera_id
         self.cap_fd = self.open()
@@ -13,7 +14,7 @@ class Camera():
         self.cap_fd = cv.VideoCapture(self.camera_id)
         if not self.cap_fd.isOpened():
             print("Open camera({}) failed".format(self.camera_id))
-
+        self.cap_fd.set(cv.CAP_PROP_FOURCC, cv.VideoWriter_fourcc('M', 'J', 'P', 'G'))
         return self.cap_fd
 
     def is_opened(self):
@@ -80,10 +81,12 @@ class Camera():
         pass
 
     def take_photo(self):
-        start_time = time.time()
+        #start_time = time.time()
         ret, frame = self.cap_fd.read()
-        print('get frame cost:',time.time() - start_time)
-        #cv.waitKey(self.interval)
+        self.count += 1
+        print(self.count)
+        #print('get frame cost:',time.time() - start_time)
+        #cv.waitKey(1)
         return ret,frame
 
     def annoate(self):
