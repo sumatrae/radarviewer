@@ -253,7 +253,7 @@ class Radar_Viewer(QMainWindow):
         #self.frame_update_timer.start(60)
 
         self.radar_update_timer = QTimer(self)
-        #self.radar_update_timer.timeout.connect(self.update_radar_from_obj_queue)
+        self.radar_update_timer.timeout.connect(self.update_radar_from_obj_queue)
         #self.radar_update_timer.start(30)
 
     def start_camera_setting_dialog(self):
@@ -298,7 +298,7 @@ class Radar_Viewer(QMainWindow):
         self.camera_thread.start()
 
     def update_uart_info(self, uart_config_msg):
-        #self.radar_update_timer.stop()
+        self.radar_update_timer.stop()
         self.uart_cfg = uart_config_msg
         self.com = UartManager.create_instance(self.uart_cfg)
 
@@ -309,7 +309,7 @@ class Radar_Viewer(QMainWindow):
         self.radar_msg_process_thread.start()
 
 
-        #self.radar_update_timer.start(60)
+        self.radar_update_timer.start(60)
 
 
 

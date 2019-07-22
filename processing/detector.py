@@ -37,10 +37,10 @@ class DetectorThread(QThread):
 
     def run(self):
         try:
-            # self.detector = YOLO()
-            # self._try_dectecor_session()
-            # self.yolo_initial_finished.emit(True)
-            # print('Yolo init finished')
+            self.detector = YOLO()
+            self._try_dectecor_session()
+            self.yolo_initial_finished.emit(True)
+            print('Yolo init finished')
 
             while True:
 
@@ -50,14 +50,14 @@ class DetectorThread(QThread):
 
                     frame = self.input_queue.popleft()
 
-                    # if  self.enable:
-                    #     frame1 = Image.fromarray(frame)
-                    #     _, exist_person = self.detector.detect_image(frame1)
-                    #     frame = np.asarray(frame1)
-                    #     end_time_1 = time.time()
-                    #     print('detector time cost:', end_time_1 - start_time)
-                    # else:
-                    #     end_time_1 = time.time()
+                    if  self.enable:
+                        frame1 = Image.fromarray(frame)
+                        _, exist_person = self.detector.detect_image(frame1)
+                        frame = np.asarray(frame1)
+                        end_time_1 = time.time()
+                        print('detector time cost:', end_time_1 - start_time)
+                    else:
+                        end_time_1 = time.time()
                     frame = cv.resize(frame,(1280,720))
                     frame = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
                     image = QImage(frame.data, frame.shape[1], frame.shape[0], QImage.Format_RGB888)
@@ -67,8 +67,7 @@ class DetectorThread(QThread):
 
                     #self.output_queue.append(pixmap)
                 else:
-                    pass
-                    #time.sleep(0.03)
+                    time.sleep(0.03)
                     #self.msleep(30)
 
         except Exception as e:

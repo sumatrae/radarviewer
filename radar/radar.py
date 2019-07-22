@@ -180,7 +180,7 @@ class RadarMsgProcessThread(QThread):
                 self._parser_main_payload(tlvs_num, payload)
             except IndexError as e:
                 #print(e)
-                time.sleep(0.06)
+                time.sleep(0.03)
 
     def _parser_main_payload(self, num_tlvs, main_payload):
         try:

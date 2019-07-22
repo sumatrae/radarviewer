@@ -32,12 +32,9 @@ class CameraThread(QThread):
                         #     continue
 
                         self.camera_image_queue.append(frame)
-
                     else:
-                        print('no frame')
-                    # else:
-                    #     pass
-                        time.sleep(0.03)
+
+                        time.sleep(0.001)
                 except Exception as e:
                     print('take photo err')
                     print(e)

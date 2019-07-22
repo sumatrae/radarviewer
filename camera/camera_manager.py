@@ -4,9 +4,9 @@ print(camera_list.camera_list)
 class CameraCfg():
     def __init__(self):
         self.camera_list = []
-        self.id = 1
+        self.id = 0
         self.framerate = 30
-        self.resolution = [352,288]
+        self.resolution = [1280,720]
         self.brightness = 50
         self.contrast = 20
         self.gain = 0
