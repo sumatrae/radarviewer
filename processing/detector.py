@@ -1,6 +1,6 @@
 import time
 import numpy as np
-from .yolo import YOLO
+
 from PyQt5.QtCore import (QThread, pyqtSignal,QObject)
 from PIL import Image
 import cv2 as cv
@@ -9,6 +9,7 @@ from PyQt5.QtGui import (QImage, QIntValidator, QPixmap, QRegExpValidator)
 from multiprocessing import Process
 
 class DetectorThread(QThread):
+    save_img_flag = False
     yolo_initial_finished = pyqtSignal(bool)
     def __init__(self, parent, input_queue, output_queue, label, enable):
         super(DetectorThread, self).__init__(parent)
@@ -37,10 +38,12 @@ class DetectorThread(QThread):
 
     def run(self):
         try:
-            self.detector = YOLO()
-            self._try_dectecor_session()
-            self.yolo_initial_finished.emit(True)
-            print('Yolo init finished')
+            if self.enable:
+                from .yolo import YOLO
+                self.detector = YOLO()
+                self._try_dectecor_session()
+                self.yolo_initial_finished.emit(True)
+                print('Yolo init finished')
 
             while True:
 
@@ -63,6 +66,8 @@ class DetectorThread(QThread):
                     image = QImage(frame.data, frame.shape[1], frame.shape[0], QImage.Format_RGB888)
                     pixmap = QPixmap.fromImage(image)
                     self.label.setPixmap(pixmap)
+
+
                     # print('display time cost:', time.time() - end_time_1)
 
                     #self.output_queue.append(pixmap)
@@ -72,6 +77,9 @@ class DetectorThread(QThread):
 
         except Exception as e:
             print(e)
+
+    def save_img(self, *args):
+        self.save_img_flag = True
 
 
 class DetectorProcess(Process):

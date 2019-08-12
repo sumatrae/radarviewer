@@ -59,6 +59,7 @@ class Axis:
 
 
 class Radar_Viewer(QMainWindow):
+    #save_signal = pyqtSignal(bool)
     def __init__(self, *args):
         super(Radar_Viewer, self).__init__(*args)
         self.cam_manager = CameraManager()
@@ -81,6 +82,8 @@ class Radar_Viewer(QMainWindow):
         self.radar_viewer.actionCamera_Setting.triggered.connect(self.start_camera_setting_dialog)
         self.radar_viewer.actionRadar_Setting.triggered.connect(self.start_serial_setting_dialog)
         self.radar_viewer.actionAbout.triggered.connect(self.start_about_dialog)
+
+
 
     def init_radar_axis_para(self):
         self.radar_max_x_abs = 10
@@ -172,6 +175,8 @@ class Radar_Viewer(QMainWindow):
 
     def init_main_ui_setting(self):
         self.detector_enable = False
+        self.cv_trigger_enable = False
+        self.radar_viewer.checkBox_cv_trigger.setEnabled(False)
         self.set_cv_trigger()
         self.set_radar_trigger()
 
@@ -233,9 +238,11 @@ class Radar_Viewer(QMainWindow):
         self.detector_output_queue = deque(maxlen=3)
         self.detector_thread = DetectorThread(self,  self.camera_image_queue, self.detector_output_queue,
                                               self.radar_viewer.label_video, False)
-        self.detector_thread.start()
+        #self.detector_thread.start()
 
         self.detector_thread.yolo_initial_finished.connect(self.set_detector_enable)
+
+        #self.save_signal.connect(self.detector_thread.save_img_flag)
 
         #self.detector_process = DetectorProcess(self.camera_image_queue, self.detector_output_queue, False)
         #self.detector_process.start()
@@ -249,8 +256,8 @@ class Radar_Viewer(QMainWindow):
 
     def init_timers(self):
         self.frame_update_timer = QTimer(self)
-        #self.frame_update_timer.timeout.connect(self.display_image)
-        #self.frame_update_timer.start(60)
+        self.frame_update_timer.timeout.connect(self.display_image)
+        self.frame_update_timer.start(60)
 
         self.radar_update_timer = QTimer(self)
         self.radar_update_timer.timeout.connect(self.update_radar_from_obj_queue)
@@ -325,8 +332,10 @@ class Radar_Viewer(QMainWindow):
         detector_finished_flag = args[0]
         if detector_finished_flag == True:
             self.radar_viewer.checkBox_detector_switch.setEnabled(True)
+            self.radar_viewer.checkBox_cv_trigger.setEnabled(True)
         else:
             self.radar_viewer.checkBox_detector_switch.setEnabled(False)
+            self.radar_viewer.checkBox_cv_trigger.setEnabled(False)
 
 
     def clear_scatter(self):
@@ -337,7 +346,7 @@ class Radar_Viewer(QMainWindow):
             self.scatter_collection = None
 
     def plot_scatter(self, x, y):
-        # [text.remove() for text in reversed(self.qtfig.axes.texts)]
+        [text.remove() for text in reversed(self.qtfig.axes.texts)]
         try:
             self.clear_scatter()
 
@@ -346,8 +355,8 @@ class Radar_Viewer(QMainWindow):
             print("scatter err")
             print(e)
 
-        # for x1, y1 in zip(x, y):
-        #     self.qtfig.axes.text(x1, y1, '({},{})'.format(round(x1, 1), round(y1, 1)))
+        for x1, y1 in zip(x, y):
+            self.qtfig.axes.text(x1, y1, '({},{})'.format(round(x1, 1), round(y1, 1)))
 
     # def update_radar(self, *args):
     #     #print(args)
@@ -370,13 +379,14 @@ class Radar_Viewer(QMainWindow):
                 self.clear_scatter()
                 return
 
-            x, y, x_size, y_size = radar.radar_obj_msg_queue.popleft()
-            self.plot_scatter(x, y)
+            self.x, self.y, x_size, y_size = radar.radar_obj_msg_queue.popleft()
+            self.plot_scatter(self.x, self.y)
 
-            for x1, y1 in zip(x, y):
+            for x1, y1 in zip(self.x, self.y):
                 if self.radar_startx <= x1 <= self.radar_startx + self.radar_capture_width \
                         and self.radar_starty <= y1 <= self.radar_starty + self.radar_capture_deepth:
                     self.obstacle_in_area = True
+                    #self.save_signal.emit(True)
                     return
 
         except IndexError as e:
@@ -393,7 +403,6 @@ class Radar_Viewer(QMainWindow):
 
     def display_image(self):
         start_time = time.time()
-        self.update_radar_from_obj_queue()
         try:
             start_time = time.time()
             pixmap = None
@@ -407,9 +416,16 @@ class Radar_Viewer(QMainWindow):
                 #print('camera image queue len:',len(self.camera_image_queue))
                 if len(self.camera_image_queue) > 0:
                     frame = self.camera_image_queue.popleft()
-                    #frame = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
+                    if len(self.x):
+                        imagePoints = cv.projectPoints(objectPoints, rvec, tvec, mtx, dist)
+                        point = np.array(imagePoints[0][0, 0, :]).astype(int)
+                        cv.circle(frame, tuple(point), 2, (0, 0, 255), 4)
+
+                    frame = cv.resize(frame, (1280, 720))
+                    frame = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
                     image = QImage(frame.data, frame.shape[1], frame.shape[0], QImage.Format_RGB888)
                     pixmap = QPixmap.fromImage(image)
+                    self.radar_viewer.label_video.setPixmap(pixmap)
                 else:
                     return
 
