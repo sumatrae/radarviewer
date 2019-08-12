@@ -417,7 +417,9 @@ class Radar_Viewer(QMainWindow):
                 if len(self.camera_image_queue) > 0:
                     frame = self.camera_image_queue.popleft()
                     if len(self.x):
-                        imagePoints = cv.projectPoints(objectPoints, rvec, tvec, mtx, dist)
+                        rvec = np.array([0,0,0])
+                        tvec = np.array([0,0,0])
+                        imagePoints = cv.projectPoints((self.x, self.y), rvec, tvec, mtx, dist)
                         point = np.array(imagePoints[0][0, 0, :]).astype(int)
                         cv.circle(frame, tuple(point), 2, (0, 0, 255), 4)
 
