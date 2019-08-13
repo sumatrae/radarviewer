@@ -18,8 +18,10 @@ import camera_setting
 import radar
 import serial_setting
 from camera import (CameraManager, CameraThread)
+from camera.calibration.intrinsic import (dist,mtx)
 from processing import (DetectorThread,DetectorProcess)
 from radar import *
+
 
 matplotlib.use("Qt5Agg")  # 声明使用QT5
 
@@ -60,6 +62,8 @@ class Axis:
 
 class Radar_Viewer(QMainWindow):
     #save_signal = pyqtSignal(bool)
+    x = np.array([])
+    y = np.array([])
     def __init__(self, *args):
         super(Radar_Viewer, self).__init__(*args)
         self.cam_manager = CameraManager()
@@ -410,17 +414,20 @@ class Radar_Viewer(QMainWindow):
                 print('detector output queue len:',len(self.detector_output_queue))
                 if len(self.detector_output_queue) > 0:
                     pixmap = self.detector_output_queue.popleft()
-                else:
                     return
             else:
                 #print('camera image queue len:',len(self.camera_image_queue))
                 if len(self.camera_image_queue) > 0:
                     frame = self.camera_image_queue.popleft()
-                    if len(self.x):
-                        rvec = np.array([0,0,0])
-                        tvec = np.array([0,0,0])
-                        imagePoints = cv.projectPoints((self.x, self.y), rvec, tvec, mtx, dist)
-                        point = np.array(imagePoints[0][0, 0, :]).astype(int)
+
+                    if self.x.size:
+                        rvec = np.array([0,0,0], np.float32)
+                        tvec = np.array([0,0,0], np.float32)
+                        objp = np.zeros((1,3), np.float32)
+                        objp[0][0],objp[0][1] = self.x, self.y
+                        imagePoints,_ = cv.projectPoints(objp, rvec, tvec, mtx, dist)
+                        point = np.array(imagePoints[0][0][:]).astype(int)
+                        print('point:',point)
                         cv.circle(frame, tuple(point), 2, (0, 0, 255), 4)
 
                     frame = cv.resize(frame, (1280, 720))

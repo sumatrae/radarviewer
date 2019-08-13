@@ -18,7 +18,7 @@ objp[:,:2] = np.mgrid[0:w,0:h].T.reshape(-1,2)*15
 objpoints = [] # 在世界坐标系中的三维点
 imgpoints = [] # 在图像平面的二维点
 
-images = glob.glob('*.png')
+images = glob.glob('./calibration_files/*.jpg')
 for fname in images:
     img = cv2.imread(fname)
     gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
@@ -34,22 +34,26 @@ for fname in images:
 
         # 将角点在图像上显示
         cv2.drawChessboardCorners(img, (w,h), corners, ret)
-        cv2.imshow('findCorners',img)
+        #cv2.imshow('findCorners',img)
         cv2.waitKey(0)
 cv2.destroyAllWindows()
 
 # 标定
 ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1], None, None)
+print(mtx, dist)
+
 
 # 去畸变
-img2 = cv2.imread('my5.png')
-h,  w = img2.shape[:2]
-newcameramtx, roi=cv2.getOptimalNewCameraMatrix(mtx,dist,(w,h),0,(w,h)) # 自由比例参数
+img2 = cv2.imread('./calibration_files/1.jpg')
+hight,  weight = img2.shape[:2]
+newcameramtx, roi=cv2.getOptimalNewCameraMatrix(mtx,dist,(weight,hight),0,(weight,hight)) # 自由比例参数
 dst = cv2.undistort(img2, mtx, dist, None, newcameramtx)
+cv2.imshow('undistort',dst)
+cv2.waitKey(0)
 # 根据前面ROI区域裁剪图片
 #x,y,w,h = roi
 #dst = dst[y:y+h, x:x+w]
-cv2.imwrite('calibresult.png',dst)
+#cv2.imwrite('./output/calibresult.png',dst)
 
 # 反投影误差
 total_error = 0
